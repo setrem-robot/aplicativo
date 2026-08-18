@@ -1,0 +1,38 @@
+# Configuracao do analisador de codigo.
+#
+# O analisador le o codigo sem executar e aponta erros, coisas suspeitas e
+# desvios de estilo. Rode com:
+#
+#     flutter analyze
+#
+# Ele tambem roda sozinho dentro do VS Code / Android Studio, sublinhando os
+# problemas enquanto voce digita. Manter isso limpo evita a maior parte dos
+# bugs bobos antes de voce gerar um APK.
+
+analyzer:
+  # Pastas geradas pelo Flutter ou pertencentes ao Android/iOS: nao sao
+  # codigo nosso, entao nao vale a pena analisar.
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+
+# Conjunto de boas praticas oficial do time do Flutter.
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Aspas simples em todo lugar (o codigo do projeto ja segue esse padrao).
+    prefer_single_quotes: true
+
+    # Avisa se voce esquecer um `const`. Alem de estilo, isso e desempenho
+    # real: widgets marcados como const nao sao reconstruidos a toa.
+    prefer_const_constructors: true
+
+    # Para desligar uma regra so numa linha, escreva acima dela:
+    #     // ignore: nome_da_regra
+    # Documentacao de todas as regras: https://dart.dev/lints

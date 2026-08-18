@@ -1,0 +1,19 @@
+# MODELO. Copie para `key.properties` (sem o .example) e preencha.
+#
+#     cp android/key.properties.example android/key.properties
+#
+# O arquivo preenchido tem SENHAS: ele esta no .gitignore e nunca deve ser
+# commitado. Este .example, sem senha nenhuma, pode ir para o Git tranquilo.
+#
+# Enquanto `key.properties` nao existir, o build de release usa a chave de
+# debug e funciona normalmente.
+
+# Senha do keystore (a que voce digitou no keytool).
+storePassword=
+# Senha da chave. Normalmente e a mesma do keystore.
+keyPassword=
+# O `-alias` que voce passou para o keytool.
+keyAlias=robot
+# Caminho ate o arquivo .jks. Pode ser absoluto (/home/voce/robot.jks) ou
+# relativo a pasta `android/`.
+storeFile=

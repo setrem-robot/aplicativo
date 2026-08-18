@@ -1,0 +1,77 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# ---------------------------------------------------------------------------
+# Acrescentado ao herdar o projeto
+# ---------------------------------------------------------------------------
+
+# Caminhos do SDK, especificos de cada maquina. Foi este arquivo que veio
+# apontando para o computador do dono anterior e impedia o projeto de
+# compilar. Ele e regerado sozinho pelo `flutter build`.
+android/local.properties
+local.properties
+
+# SEGREDOS: chaves de assinatura do app. Se vazarem, outra pessoa consegue
+# publicar atualizacoes falsas em nome do seu app. Nunca subir.
+*.jks
+*.keystore
+android/key.properties
+
+# APKs gerados. Sao grandes e regeraveis; distribua por release do GitHub,
+# nao versionando o binario.
+*.apk
+*.aab
+
+# Gradle
+android/.gradle/
+.gradle/
+
+# Resultado de compilacao em QUALQUER subpasta. A regra `/build/` la em cima
+# so pega a pasta da raiz e deixava `android/build/` escapar para o commit.
+**/build/
+
+# Sistema
+Thumbs.db

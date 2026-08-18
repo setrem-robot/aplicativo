@@ -1,0 +1,50 @@
+# Identidade e dependencias do projeto.
+#
+# Depois de editar qualquer coisa neste arquivo, rode:
+#
+#     flutter pub get
+#
+name: robot_controller
+description: App Android para controlar um robo com ESP32 via Bluetooth.
+
+# 'none' impede que este projeto seja publicado no pub.dev por acidente.
+publish_to: 'none'
+
+# O numero antes do "+" e a versao que aparece para o usuario (1.0.0).
+# O numero depois do "+" e o codigo interno da build: o Android exige que ele
+# AUMENTE a cada atualizacao publicada, senao recusa a instalacao por cima.
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Bluetooth Serial (SPP) — o "Bluetooth classico", o mesmo dos modulos
+  # HC-05. E o que o ESP32 deste projeto usa. So funciona no Android.
+  #
+  # O projeto usava `flutter_bluetooth_serial`, que esta parado desde 2021 e
+  # NAO COMPILA mais: o arquivo de build dele e da epoca do Android Gradle
+  # Plugin 4, sem `namespace`, usando `jcenter()` (repositorio desligado) e
+  # `lintOptions` (removido no AGP 8). Foi trocado por este fork, que e o
+  # mesmo codigo com a build modernizada e a MESMA API — so mudou o import.
+  flutter_bluetooth_serial_plus: ^0.5.6
+
+  # Pede as permissoes de Bluetooth e Localizacao ao Android.
+  permission_handler: ^11.0.1
+
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  # Ferramenta de teste (`flutter test`). Nao vai dentro do APK.
+  flutter_test:
+    sdk: flutter
+
+  # Regras de boas praticas usadas pelo `flutter analyze`.
+  # Configuradas em analysis_options.yaml.
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
