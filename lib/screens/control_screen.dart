@@ -126,7 +126,10 @@ class _TopBar extends StatelessWidget {
           child: const Text(
             'ROBO',
             style: TextStyle(
-              color: Colors.white,
+              // Escuro, e nao branco: este selo e pintado com o degrade da
+              // marca, que agora e verde claro nas duas pontas. Texto branco
+              // em cima dele sumia.
+              color: AppColors.onBrand,
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.5,

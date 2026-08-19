@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
     <application
-        android:label="Robot Controller"
+        android:label="Atlas Controller"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

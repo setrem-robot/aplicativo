@@ -64,6 +64,11 @@ elas — e esquecer uma era garantido.
 Agora existe `AppColors.primary`. Trocar a cor do app inteiro é mudar
 **uma linha**.
 
+E isso não é hipótese: o app nasceu ciano e hoje é verde, na paleta oficial
+da Setrem (`#00BF6F`, Pantone 7480 C). A troca custou quatro constantes neste
+arquivo. Nenhuma tela precisou ser tocada — só o selo "ROBO" da tela de
+controle, porque o texto branco dele sumia em cima do degradê claro.
+
 ```dart
 // em vez de:
 color: const Color(0xFF00E5FF)

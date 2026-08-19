@@ -1,4 +1,4 @@
-# Robot Controller
+# Atlas Controller
 
 App Android (feito em Flutter) que controla um robô com ESP32 por Bluetooth.
 Você conecta no robô já pareado no celular e usa uma cruz direcional na tela

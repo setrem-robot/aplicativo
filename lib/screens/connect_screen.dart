@@ -134,11 +134,21 @@ class _ConnectScreenState extends State<ConnectScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('ROBO', style: titleStyle),
+        const Text('ATLAS', style: titleStyle),
         // ShaderMask pinta o texto com o degrade da marca.
-        ShaderMask(
-          shaderCallback: AppColors.brandGradient.createShader,
-          child: const Text('PIEV', style: titleStyle),
+        //
+        // O FittedBox existe porque "CONTROLLER" e uma palavra longa: em
+        // celular estreito ela nao cabe em 40pt e o Flutter desenharia a
+        // listra amarela de overflow. Com `scaleDown` o texto so encolhe
+        // quando falta espaco -- na maioria dos aparelhos ele fica no
+        // tamanho cheio, igual a linha de cima.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: ShaderMask(
+            shaderCallback: AppColors.brandGradient.createShader,
+            child: const Text('CONTROLLER', style: titleStyle),
+          ),
         ),
         const SizedBox(height: AppSpacing.small),
         const Text(
