@@ -1,5 +1,8 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bluetooth_serial_plus/flutter_bluetooth_serial_plus.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../app/theme.dart';
@@ -9,8 +12,12 @@ import 'control_screen.dart';
 
 /// PRIMEIRA TELA DO APP.
 ///
-/// Mostra os dispositivos Bluetooth ja pareados no Android e deixa o usuario
+/// Escaneia por robos anunciando o servico BLE do Atlas e deixa o usuario
 /// escolher um. Ao conectar com sucesso, abre a [ControlScreen].
+///
+/// Diferente do Bluetooth Classic (que exigia parear o ESP32 antes, nas
+/// configuracoes do sistema), BLE nao precisa de pareamento previo: basta o
+/// robo estar ligado e por perto.
 class ConnectScreen extends StatefulWidget {
   const ConnectScreen({super.key});
 
@@ -22,9 +29,10 @@ class _ConnectScreenState extends State<ConnectScreen>
     with SingleTickerProviderStateMixin {
   final _robot = RobotConnection.instance;
 
-  List<BluetoothDevice> _devices = const [];
-  bool _isLoading = false;
-  String? _connectingAddress;
+  StreamSubscription<List<ScanResult>>? _scanSub;
+  List<ScanResult> _results = const [];
+  bool _isScanning = false;
+  String? _connectingId;
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
@@ -39,50 +47,67 @@ class _ConnectScreenState extends State<ConnectScreen>
     _pulseAnimation = Tween(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-    _setUpAndLoad();
+    _setUpAndScan();
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
+    _scanSub?.cancel();
+    _robot.stopScan();
     super.dispose();
   }
 
-  /// Pede as permissoes do Android, garante que o Bluetooth esta ligado e
-  /// entao carrega a lista. Sem as permissoes o Android devolve uma lista
+  /// Pede as permissoes do sistema, garante que o Bluetooth esta ligado e
+  /// entao inicia o escaneamento. Sem as permissoes o SO devolve uma lista
   /// vazia sem dar erro nenhum, o que confunde muito na hora de depurar.
-  Future<void> _setUpAndLoad() async {
-    await [
-      Permission.bluetooth,
-      Permission.bluetoothConnect,
-      Permission.bluetoothScan,
-      Permission.locationWhenInUse,
-    ].request();
+  ///
+  /// `permission_handler` so tem implementacao para Android e iOS — nas
+  /// plataformas desktop (usadas so para visualizar a UI em desenvolvimento)
+  /// pedir permissao lançaria `MissingPluginException`, entao pulamos.
+  Future<void> _setUpAndScan() async {
+    final isMobile = defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+
+    if (isMobile) {
+      await [
+        Permission.bluetoothScan,
+        Permission.bluetoothConnect,
+        Permission.locationWhenInUse,
+      ].request();
+    }
 
     if (!await _robot.isBluetoothOn()) {
       await _robot.requestEnableBluetooth();
     }
 
-    await _loadDevices();
+    await _startScan();
   }
 
-  Future<void> _loadDevices() async {
-    setState(() => _isLoading = true);
-    final devices = await _robot.pairedDevices();
-    if (!mounted) return;
+  Future<void> _startScan() async {
+    await _scanSub?.cancel();
     setState(() {
-      _devices = devices;
-      _isLoading = false;
+      _isScanning = true;
+      _results = const [];
+    });
+
+    _scanSub = _robot.scan().listen((results) {
+      if (!mounted) return;
+      setState(() => _results = results);
+    });
+
+    Future.delayed(const Duration(seconds: 8), () {
+      if (mounted) setState(() => _isScanning = false);
     });
   }
 
   Future<void> _connect(BluetoothDevice device) async {
-    setState(() => _connectingAddress = device.address);
+    setState(() => _connectingId = device.remoteId.str);
 
     final connected = await _robot.connect(device);
 
     if (!mounted) return;
-    setState(() => _connectingAddress = null);
+    setState(() => _connectingId = null);
 
     if (connected) {
       Navigator.push(
@@ -152,7 +177,7 @@ class _ConnectScreenState extends State<ConnectScreen>
         ),
         const SizedBox(height: AppSpacing.small),
         const Text(
-          'Conecte ao seu ESP32',
+          'Procurando seu robo por Bluetooth',
           style: TextStyle(fontSize: 15, color: Colors.white38),
         ),
       ],
@@ -191,7 +216,7 @@ class _ConnectScreenState extends State<ConnectScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Dispositivos Pareados',
+              'Robos por perto',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -199,9 +224,9 @@ class _ConnectScreenState extends State<ConnectScreen>
               ),
             ),
             IconButton(
-              tooltip: 'Atualizar lista',
-              onPressed: _isLoading ? null : _loadDevices,
-              icon: _isLoading
+              tooltip: 'Buscar novamente',
+              onPressed: _isScanning ? null : _startScan,
+              icon: _isScanning
                   ? const SizedBox(
                       width: 20,
                       height: 20,
@@ -216,24 +241,24 @@ class _ConnectScreenState extends State<ConnectScreen>
         ),
         const SizedBox(height: 12),
         Expanded(
-          child: _devices.isEmpty && !_isLoading
+          child: _results.isEmpty && !_isScanning
               ? _buildEmptyState()
               : ListView.separated(
-                  itemCount: _devices.length,
+                  itemCount: _results.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (_, i) {
-                    final device = _devices[i];
-                    final isBusy = _connectingAddress != null;
+                    final device = _results[i].device;
+                    final isBusy = _connectingId != null;
                     return DeviceTile(
                       device: device,
-                      isConnecting: _connectingAddress == device.address,
+                      isConnecting: _connectingId == device.remoteId.str,
                       onTap: isBusy ? null : () => _connect(device),
                     );
                   },
                 ),
         ),
         const SizedBox(height: AppSpacing.medium),
-        _buildPairHint(),
+        _buildScanHint(),
       ],
     );
   }
@@ -246,12 +271,12 @@ class _ConnectScreenState extends State<ConnectScreen>
           Icon(Icons.bluetooth_searching, size: 48, color: Colors.white12),
           SizedBox(height: AppSpacing.medium),
           Text(
-            'Nenhum dispositivo encontrado',
+            'Nenhum robo encontrado',
             style: TextStyle(color: Colors.white38, fontSize: 15),
           ),
           SizedBox(height: AppSpacing.small),
           Text(
-            'Pareie o ESP32 nas\nconfiguracoes do Android primeiro',
+            'Verifique se o robo esta ligado\ne dentro do alcance',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white24, fontSize: 13),
           ),
@@ -260,7 +285,7 @@ class _ConnectScreenState extends State<ConnectScreen>
     );
   }
 
-  Widget _buildPairHint() {
+  Widget _buildScanHint() {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -274,7 +299,7 @@ class _ConnectScreenState extends State<ConnectScreen>
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Para parear: Configuracoes -> Bluetooth -> Adicionar dispositivo',
+              'BLE nao precisa de pareamento previo: so o robo estar ligado ja basta.',
               style: TextStyle(color: Colors.white54, fontSize: 12),
             ),
           ),

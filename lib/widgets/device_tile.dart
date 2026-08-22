@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bluetooth_serial_plus/flutter_bluetooth_serial_plus.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../app/theme.dart';
 import 'app_card.dart';
 
-/// Uma linha da lista de dispositivos pareados.
+/// Uma linha da lista de robos encontrados no escaneamento BLE.
 class DeviceTile extends StatelessWidget {
   const DeviceTile({
     super.key,
@@ -34,8 +34,8 @@ class DeviceTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  device.name?.isNotEmpty == true
-                      ? device.name!
+                  device.platformName.isNotEmpty
+                      ? device.platformName
                       : 'Dispositivo sem nome',
                   style: const TextStyle(
                     color: Colors.white,
@@ -45,7 +45,7 @@ class DeviceTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  device.address,
+                  device.remoteId.str,
                   style: const TextStyle(color: Colors.white38, fontSize: 12),
                 ),
               ],
