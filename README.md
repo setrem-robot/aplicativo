@@ -1,14 +1,19 @@
 # Atlas Controller
 
-App Android (feito em Flutter) que controla um robô com ESP32 por Bluetooth.
-Você conecta no robô já pareado no celular e usa uma cruz direcional na tela
-para mandar ele andar.
+App Android/iOS (feito em Flutter) que controla um robô com ESP32 por
+Bluetooth Low Energy (BLE). Você escaneia e conecta no robô direto (sem
+pareamento prévio) e usa uma cruz direcional na tela para mandar ele andar.
 
 | | |
 |---|---|
-| **Plataforma alvo** | Android (o Bluetooth clássico usado aqui não existe no iOS) |
+| **Plataforma alvo** | Android e iOS |
 | **Flutter** | 3.47.0 (canal stable) |
-| **Comunicação** | Bluetooth Serial (SPP), o mesmo do módulo HC-05/ESP32 |
+| **Comunicação** | BLE (GATT), serviço no padrão Nordic UART Service (NUS) |
+
+> Até uma versão anterior deste app, a comunicação era por Bluetooth Classic
+> (SPP) — o que só funcionava no Android. A migração para BLE foi feita
+> justamente para permitir rodar no iOS; veja `robot_connection.dart` e o
+> firmware em `esp32_ble_bridge.ino` no repositório `orquestrador`.
 
 ---
 
@@ -18,8 +23,8 @@ para mandar ele andar.
 ┌─────────────────┐   você toca no robô   ┌─────────────────┐
 │  ConnectScreen  │ ────────────────────► │  ControlScreen  │
 │                 │                        │                 │
-│ lista os        │ ◄──────────────────── │ cruz direcional │
-│ pareados        │   botão desconectar    │ + status        │
+│ escaneia e      │ ◄──────────────────── │ cruz direcional │
+│ lista por perto │   botão desconectar    │ + status        │
 └─────────────────┘                        └─────────────────┘
          │                                          │
          └──────────────┬───────────────────────────┘

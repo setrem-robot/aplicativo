@@ -236,7 +236,8 @@ Pendências conhecidas, para decidir depois:
 - `applicationId` ainda é `com.example.robot_controller` — impede publicar na
   Play Store, mas não atrapalha instalar o APK direto.
 - O APK de release é assinado com a chave de debug.
-- `flutter_bluetooth_serial` está sem manutenção desde 2021. Funciona, mas se
-  um dia parar de compilar numa versão futura do Android, a saída é migrar
-  para um fork mantido ou para BLE (o que exigiria mudar o firmware do ESP32
-  também).
+- ~~`flutter_bluetooth_serial` está sem manutenção desde 2021...~~ — resolvido:
+  o projeto migrou de Bluetooth Classic (SPP) para BLE, usando
+  `flutter_blue_plus`. Isso também foi o que permitiu suporte a iOS (o
+  Bluetooth Classic nunca existiu lá). O firmware do ESP32 foi migrado junto
+  — veja `esp32_ble_bridge.ino` no repositório `orquestrador`.
