@@ -9,47 +9,29 @@ import '../models/robot_command.dart';
 /// Em que ponto da conexao o app esta.
 enum ConnectionStatus { disconnected, connecting, connected }
 
-/// UUIDs do servico BLE que o ESP32 expoe (padrao Nordic UART Service —
-/// NUS, o mesmo usado por praticamente todo firmware BLE "serial-like").
+/// UUIDs do servico BLE que o ESP32 expoe (padrao Nordic UART Service).
 /// Se mudar aqui, tem que mudar em `esp32_ble_bridge.ino` tambem.
 class RobotBleIds {
   RobotBleIds._();
 
   static final serviceUuid = Guid('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
-
-  /// O celular escreve aqui — comandos indo para o robo.
   static final rxCharacteristicUuid = Guid(
     '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
-  );
-
-  /// O ESP32 notifica aqui — acks e futura telemetria vindo do robo.
+  ); // celular escreve aqui
   static final txCharacteristicUuid = Guid(
     '6e400003-b5a3-f393-e0a9-e50e24dcca9e',
-  );
+  ); // ESP32 notifica aqui
 }
 
-/// Tudo que fala com o robo passa por aqui. As telas NUNCA conversam com o
-/// Bluetooth diretamente — elas pedem para este objeto.
-///
-/// ## Por que ele e um ChangeNotifier
-///
-/// A conexao pode cair sozinha (robo desligou, saiu do alcance). Quando isso
-/// acontece este objeto chama `notifyListeners()` e as telas que estao
-/// escutando se redesenham sozinhas mostrando "Desconectado".
-///
-/// ## Como usar em uma tela
-///
-/// ```dart
-/// ListenableBuilder(
-///   listenable: RobotConnection.instance,
-///   builder: (context, _) => Text(RobotConnection.instance.isConnected ? 'ok' : 'caiu'),
-/// )
-/// ```
+/// Tudo que fala com o robo passa por aqui — as telas nunca conversam com o
+/// Bluetooth diretamente. E um `ChangeNotifier` porque a conexao pode cair
+/// sozinha (robo desligou, saiu do alcance); quando isso acontece,
+/// `notifyListeners()` avisa as telas escutando, que se redesenham mostrando
+/// "Desconectado" sem precisar de nenhum polling.
 class RobotConnection extends ChangeNotifier {
   RobotConnection._();
 
-  /// Existe um unico objeto de conexao no app inteiro (so ha um robo e um
-  /// radio Bluetooth). Use sempre `RobotConnection.instance`.
+  /// So ha um robo e um radio Bluetooth por app.
   static final RobotConnection instance = RobotConnection._();
 
   BluetoothDevice? _device;
@@ -62,23 +44,17 @@ class RobotConnection extends ChangeNotifier {
 
   bool get isConnected => _status == ConnectionStatus.connected;
 
-  /// Nome do robo conectado, para a tela mostrar no topo.
   String? _deviceName;
   String? get deviceName => _deviceName;
 
-  /// Ultimo comando enviado com sucesso. A tela de controle usa para o
-  /// cartao "STATUS ATUAL".
   RobotCommand _lastCommand = RobotCommand.stop;
   RobotCommand get lastCommand => _lastCommand;
 
-  /// Descricao do ultimo erro, para mostrar ao usuario. `null` = sem erro.
+  /// `null` = sem erro.
   String? _lastError;
   String? get lastError => _lastError;
 
-  /// Escaneia por robos anunciando o servico BLE do Atlas.
-  ///
-  /// Diferente do Bluetooth Classic (que exigia parear o ESP32 antes, nas
-  /// configuracoes do sistema), BLE nao usa pareamento previo: o app escaneia
+  /// BLE nao usa pareamento previo do sistema como o Classic usava: escaneia
   /// e conecta direto em quem estiver anunciando o servico certo.
   Stream<List<ScanResult>> scan({
     Duration timeout = const Duration(seconds: 8),
@@ -92,22 +68,19 @@ class RobotConnection extends ChangeNotifier {
 
   Future<void> stopScan() => FlutterBluePlus.stopScan();
 
-  /// O radio Bluetooth do celular esta ligado?
   Future<bool> isBluetoothOn() async {
     return await FlutterBluePlus.adapterState.first ==
         BluetoothAdapterState.on;
   }
 
-  /// Pede para ligar o Bluetooth. So funciona no Android — no iOS o usuario
-  /// precisa ligar manualmente pelos Ajustes (a Apple nao deixa apps fazerem
-  /// isso sozinhos).
+  /// So funciona no Android — no iOS a Apple nao deixa apps ligarem o
+  /// Bluetooth sozinhos, o usuario precisa ir nos Ajustes.
   Future<void> requestEnableBluetooth() async {
     if (defaultTargetPlatform == TargetPlatform.android) {
       await FlutterBluePlus.turnOn();
     }
   }
 
-  /// Tenta conectar. Devolve `true` se deu certo.
   Future<bool> connect(BluetoothDevice device) async {
     _lastError = null;
     _status = ConnectionStatus.connecting;
@@ -116,19 +89,15 @@ class RobotConnection extends ChangeNotifier {
     await FlutterBluePlus.stopScan();
 
     try {
-      // `License.nonprofit`: este e um projeto academico (PIE da Setrem),
-      // sem fins lucrativos — se o app for comercializado algum dia, troque
-      // para `License.commercial` (paga). Veja a licenca do flutter_blue_plus.
+      // License.nonprofit: projeto academico sem fins lucrativos (PIE da
+      // Setrem) -- exigido pela licenca do flutter_blue_plus.
       await device.connect(
         license: License.nonprofit,
         timeout: const Duration(seconds: 10),
       );
 
-      // Ficamos escutando o estado da conexao por dois motivos:
-      // 1. e assim que descobrimos que a conexao caiu (o robo desligou, saiu
-      //    de alcance...);
-      // 2. no BLE, ao contrario do Classic, nao existe "onDone" de stream —
-      //    o estado da conexao e o unico sinal confiavel disso.
+      // No BLE nao existe "onDone" de stream como no Classic; o estado da
+      // conexao e o unico sinal confiavel de que o robo caiu.
       _connectionSub = device.connectionState.listen((state) {
         if (state == BluetoothConnectionState.disconnected) {
           _handleDrop('O robo encerrou a conexao.');
@@ -174,13 +143,8 @@ class RobotConnection extends ChangeNotifier {
     }
   }
 
-  /// Envia um comando para o robo.
-  ///
-  /// O formato do que vai pelo ar e `{"cmd":"F"}` seguido de uma quebra de
-  /// linha. O firmware do ESP32 espera exatamente isso — se mudar aqui, tem
-  /// que mudar la tambem. So o transporte mudou (BLE em vez de Classic); o
-  /// formato da mensagem continua o mesmo de propositio, para nao precisar
-  /// tocar no resto do firmware.
+  /// Payload `{"cmd":"F"}\n` -- o firmware do ESP32 espera exatamente esse
+  /// formato; mudou aqui, muda la tambem.
   Future<void> send(RobotCommand command) async {
     final characteristic = _rxCharacteristic;
     if (characteristic == null || !isConnected) return;
@@ -195,7 +159,6 @@ class RobotConnection extends ChangeNotifier {
     }
   }
 
-  /// Encerra a conexao de proposito (o usuario apertou o botao de sair).
   Future<void> disconnect() async {
     await _notifySub?.cancel();
     _notifySub = null;
@@ -210,18 +173,14 @@ class RobotConnection extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Chamado quando chegam bytes vindos do robo pela caracteristica de
-  /// notificacao.
-  ///
-  /// Hoje o app so escreve no log de depuracao. Se um dia o ESP32 mandar
-  /// telemetria (bateria, distancia), o tratamento entra aqui.
   void _onDataFromRobot(List<int> data) {
+    // So log de depuracao por enquanto; telemetria futura (bateria,
+    // distancia) entraria aqui.
     if (kDebugMode) {
       debugPrint('Robo respondeu: ${utf8.decode(data, allowMalformed: true)}');
     }
   }
 
-  /// A conexao caiu sem o usuario pedir.
   void _handleDrop(String reason) {
     if (_status == ConnectionStatus.disconnected) return;
     _lastError = reason;
@@ -235,7 +194,6 @@ class RobotConnection extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Limpa a mensagem de erro depois que a tela ja a mostrou.
   void clearError() {
     if (_lastError == null) return;
     _lastError = null;

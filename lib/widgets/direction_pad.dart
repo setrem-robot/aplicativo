@@ -5,10 +5,8 @@ import '../models/robot_command.dart';
 
 /// A cruz direcional (o "D-pad") com o botao STOP no meio.
 ///
-/// Ela nao sabe nada sobre Bluetooth. Ela so avisa quem a usou: "apertaram
-/// tal comando" ou "soltaram o botao". Quem decide o que fazer com isso e a
-/// tela de controle. Isso e o que permite testar este widget sozinho e
-/// reaproveita-lo em outro lugar.
+/// Nao sabe nada sobre Bluetooth: so avisa "apertaram X" / "soltaram" para
+/// quem o usa decidir o que fazer.
 class DirectionPad extends StatelessWidget {
   const DirectionPad({
     super.key,

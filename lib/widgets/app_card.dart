@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
 
-/// O "cartao" escuro de cantos arredondados que aparece em quase toda tela
-/// do app (lista de dispositivos, status, rodape...).
-///
-/// Antes esse mesmo `Container` com `BoxDecoration` estava copiado e colado
-/// em seis lugares. Agora existe uma vez so: mexeu aqui, mudou em todos.
+/// O "cartao" escuro de cantos arredondados usado em quase toda tela.
 class AppCard extends StatelessWidget {
   const AppCard({
     super.key,

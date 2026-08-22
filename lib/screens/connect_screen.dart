@@ -10,14 +10,8 @@ import '../services/robot_connection.dart';
 import '../widgets/device_tile.dart';
 import 'control_screen.dart';
 
-/// PRIMEIRA TELA DO APP.
-///
-/// Escaneia por robos anunciando o servico BLE do Atlas e deixa o usuario
-/// escolher um. Ao conectar com sucesso, abre a [ControlScreen].
-///
-/// Diferente do Bluetooth Classic (que exigia parear o ESP32 antes, nas
-/// configuracoes do sistema), BLE nao precisa de pareamento previo: basta o
-/// robo estar ligado e por perto.
+/// PRIMEIRA TELA DO APP: escaneia por robos anunciando o servico BLE do
+/// Atlas e, ao conectar, abre a [ControlScreen].
 class ConnectScreen extends StatefulWidget {
   const ConnectScreen({super.key});
 
@@ -58,13 +52,9 @@ class _ConnectScreenState extends State<ConnectScreen>
     super.dispose();
   }
 
-  /// Pede as permissoes do sistema, garante que o Bluetooth esta ligado e
-  /// entao inicia o escaneamento. Sem as permissoes o SO devolve uma lista
-  /// vazia sem dar erro nenhum, o que confunde muito na hora de depurar.
-  ///
-  /// `permission_handler` so tem implementacao para Android e iOS — nas
-  /// plataformas desktop (usadas so para visualizar a UI em desenvolvimento)
-  /// pedir permissao lançaria `MissingPluginException`, entao pulamos.
+  /// Sem permissao o SO devolve lista vazia sem erro (dificil de depurar).
+  /// `permission_handler` nao tem implementacao para desktop -- pular fora
+  /// de Android/iOS evita `MissingPluginException`.
   Future<void> _setUpAndScan() async {
     final isMobile = defaultTargetPlatform == TargetPlatform.android ||
         defaultTargetPlatform == TargetPlatform.iOS;
@@ -160,13 +150,8 @@ class _ConnectScreenState extends State<ConnectScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('ATLAS', style: titleStyle),
-        // ShaderMask pinta o texto com o degrade da marca.
-        //
-        // O FittedBox existe porque "CONTROLLER" e uma palavra longa: em
-        // celular estreito ela nao cabe em 40pt e o Flutter desenharia a
-        // listra amarela de overflow. Com `scaleDown` o texto so encolhe
-        // quando falta espaco -- na maioria dos aparelhos ele fica no
-        // tamanho cheio, igual a linha de cima.
+        // FittedBox+scaleDown: "CONTROLLER" nao cabe em 40pt em tela estreita
+        // e estouraria com a listra de overflow sem isso.
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
