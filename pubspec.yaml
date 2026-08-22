@@ -5,7 +5,7 @@
 #     flutter pub get
 #
 name: robot_controller
-description: App Android para controlar um robo com ESP32 via Bluetooth.
+description: App Android/iOS para controlar um robo com ESP32 via Bluetooth Low Energy (BLE).
 
 # 'none' impede que este projeto seja publicado no pub.dev por acidente.
 publish_to: 'none'
@@ -22,15 +22,11 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Bluetooth Serial (SPP) — o "Bluetooth classico", o mesmo dos modulos
-  # HC-05. E o que o ESP32 deste projeto usa. So funciona no Android.
-  #
-  # O projeto usava `flutter_bluetooth_serial`, que esta parado desde 2021 e
-  # NAO COMPILA mais: o arquivo de build dele e da epoca do Android Gradle
-  # Plugin 4, sem `namespace`, usando `jcenter()` (repositorio desligado) e
-  # `lintOptions` (removido no AGP 8). Foi trocado por este fork, que e o
-  # mesmo codigo com a build modernizada e a MESMA API — so mudou o import.
-  flutter_bluetooth_serial_plus: ^0.5.6
+  # BLE (Bluetooth Low Energy) — funciona em Android E iOS, ao contrario do
+  # Bluetooth Classic (SPP) que o projeto usava antes. O ESP32 expõe um
+  # servico no padrao Nordic UART Service (NUS), que este pacote fala nos
+  # dois sistemas operacionais com a mesma API.
+  flutter_blue_plus: ^2.3.12
 
   # Pede as permissoes de Bluetooth e Localizacao ao Android.
   permission_handler: ^11.0.1
