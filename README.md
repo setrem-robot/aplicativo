@@ -17,6 +17,24 @@ pareamento prévio) e usa uma cruz direcional na tela para mandar ele andar.
 
 ---
 
+## Índice
+
+- [Como o app funciona, em 30 segundos](#como-o-app-funciona-em-30-segundos)
+- [Rodando o projeto](#rodando-o-projeto)
+  - [Primeira vez (depois de clonar)](#primeira-vez-depois-de-clonar)
+  - [Testar no Linux (desktop, com Bluetooth real)](#testar-no-linux-desktop-com-bluetooth-real)
+  - [Testar no Android (físico ou emulador)](#testar-no-android-físico-ou-emulador)
+  - [Testar no iPhone](#testar-no-iphone)
+  - [Verificar o código antes de commitar](#verificar-o-código-antes-de-commitar)
+- [Como fazer as alterações mais comuns](#como-fazer-as-alterações-mais-comuns)
+- [Detalhes de configuração](#detalhes-de-configuração)
+  - [Permissões](#permissões)
+  - [Identificador do app (`applicationId`)](#identificador-do-app-applicationid)
+  - [Assinatura de release](#assinatura-de-release)
+  - [Arquivos que não vão para o Git](#arquivos-que-não-vão-para-o-git)
+
+---
+
 ## Como o app funciona, em 30 segundos
 
 ```
@@ -58,68 +76,82 @@ Para o mapa detalhado dos arquivos, veja **[ARQUITETURA.md](ARQUITETURA.md)**.
 
 ### Primeira vez (depois de clonar)
 
-Você precisa do **Flutter 3.47+** e do **Android SDK** instalados. Se ainda
-não tem, siga o [guia oficial](https://docs.flutter.dev/get-started/install)
-— ele instala os dois.
+Você precisa do **Flutter 3.47+**. Se ainda não tem, siga o
+[guia oficial](https://docs.flutter.dev/get-started/install).
 
 ```bash
 git clone <url-do-seu-repositorio>
-cd robot_controller
+cd app
 
 flutter pub get     # baixa as dependências listadas no pubspec.yaml
-flutter doctor      # confere se falta alguma coisa no ambiente
+flutter doctor      # confere o que falta no ambiente, por plataforma alvo
 ```
-
-O `flutter doctor` precisa mostrar ✓ em **Flutter** e em **Android toolchain**.
-Os outros itens (Linux desktop, Xcode, Visual Studio) não importam: este app
-é para Android.
 
 > Você **não** precisa criar `android/local.properties` na mão. Ele guarda os
 > caminhos do SDK da sua máquina, por isso não vai para o Git — o próprio
 > `flutter build` gera ele no primeiro uso.
 
-### Gerar um APK para instalar no celular
+### Testar no Linux (desktop, com Bluetooth real)
+
+Se sua máquina Linux tem um adaptador Bluetooth (`rfkill list bluetooth`
+mostra `hci0` e o serviço `bluetooth` está ativo), o `flutter_blue_plus`
+fala BLE de verdade por esse rádio via BlueZ — não é só uma prévia visual:
 
 ```bash
-flutter build apk --debug
+flutter run -d linux
 ```
 
-O arquivo sai em:
+Isso conecta de fato no ESP32 físico, sem precisar de celular nenhum. É o
+jeito mais rápido de testar a lógica de conexão durante o desenvolvimento.
+Único cuidado: `permission_handler` não tem implementação para desktop —
+`connect_screen.dart` já pula o pedido de permissão fora de Android/iOS de
+propósito, não "conserte" isso adicionando a chamada de volta.
 
-```
-build/app/outputs/flutter-apk/app-debug.apk
-```
+### Testar no Android (físico ou emulador)
 
-Copie esse arquivo para o celular (cabo USB, Google Drive, WhatsApp para você
-mesmo) e abra para instalar. O Android vai pedir para autorizar
-"instalar apps de fontes desconhecidas" na primeira vez.
-
-Para a versão final, menor e mais rápida:
+Precisa do Android SDK (via Android Studio). Com um celular Android
+conectado (ou emulador rodando):
 
 ```bash
-flutter build apk --release
+flutter run                      # hot reload direto no aparelho
+flutter build apk --debug        # ou gera um APK para instalar manualmente
 ```
+
+O APK sai em `build/app/outputs/flutter-apk/app-debug.apk`. Copie para o
+celular (cabo, Google Drive, etc.) e abra para instalar — o Android vai
+pedir para autorizar "instalar apps de fontes desconhecidas" na primeira vez.
+
+Para a versão final, menor e mais rápida: `flutter build apk --release`.
 
 > ⚠️ O APK de release hoje é assinado com a **chave de debug** (foi assim que
 > o projeto veio). Ele instala e funciona normalmente, mas não serve para
-> publicar na Play Store. Veja "Assinatura" mais abaixo.
+> publicar na Play Store. Veja [Assinatura de release](#assinatura-de-release).
+
+### Testar no iPhone
+
+**Não é possível compilar para iOS sem macOS.** O Xcode — obrigatório para
+compilar, assinar e instalar em um iPhone — só roda em macOS; não existe
+workaround via Linux/Windows para essa etapa específica. Com acesso a um
+Mac (próprio, emprestado, ou um serviço de CI como Codemagic/GitHub Actions
+com runner `macos`):
+
+```bash
+open ios/Runner.xcworkspace   # no Mac, dentro da pasta do projeto
+```
+
+No Xcode: selecione seu iPhone como destino, configure o signing com sua
+Apple ID (aba "Signing & Capabilities" do target `Runner`) e rode. A
+característica BLE já pede a permissão certa no iOS
+(`NSBluetoothAlwaysUsageDescription` em `ios/Runner/Info.plist`).
 
 ### Verificar o código antes de commitar
 
 ```bash
 flutter analyze   # procura erros e código suspeito
-flutter test      # roda os testes automatizados
+flutter test      # roda os testes automatizados (test/*.dart)
 ```
 
 Os dois precisam passar limpos antes de você subir alterações.
-
-### Rodar no celular com hot reload (opcional)
-
-Hot reload é quando você salva o arquivo e a mudança aparece na hora no
-celular, sem recompilar. Como estamos no WSL, o WSL não enxerga o cabo USB
-sozinho — é preciso instalar o [usbipd-win](https://github.com/dorssel/usbipd-win)
-no Windows para "passar" o celular para dentro do Linux. Se você não quiser
-essa complicação, o caminho do `flutter build apk` acima funciona sempre.
 
 ---
 
@@ -131,6 +163,7 @@ essa complicação, o caminho do `flutter build apk` acima funciona sempre.
 | o texto de um botão ou aviso | a tela correspondente em `lib/screens/` |
 | adicionar um comando novo (buzina, luz) | `lib/models/robot_command.dart` |
 | o formato do que vai pelo Bluetooth | `lib/services/robot_connection.dart`, método `send` |
+| os UUIDs do serviço BLE | `RobotBleIds` em `robot_connection.dart` **e** `esp32_ble_bridge.ino` (os dois lados) |
 | o nome do app no celular | `android/app/src/main/AndroidManifest.xml`, atributo `android:label` |
 | o ícone do app | `android/app/src/main/res/mipmap-*/` |
 
@@ -140,17 +173,18 @@ essa complicação, o caminho do `flutter build apk` acima funciona sempre.
 
 ### Permissões
 
-O app pede Bluetooth e Localização. A Localização parece estranha, mas o
-Android exige ela para qualquer operação de Bluetooth em versões mais
-antigas — sem ela a lista de dispositivos volta **vazia e sem erro nenhum**,
-o que é bem difícil de descobrir depurando.
+**Android**: Bluetooth e Localização — a Localização parece estranha, mas o
+Android exige ela para operações de Bluetooth em versões mais antigas; sem
+ela a lista de dispositivos volta **vazia e sem erro nenhum**, difícil de
+depurar. **iOS**: `NSBluetoothAlwaysUsageDescription` no `Info.plist` — sem
+ela o app crasha ao tentar usar Bluetooth.
 
 ### Identificador do app (`applicationId`)
 
-Está como `com.example.robot_controller`, que é o valor de exemplo que o
-Flutter gera. Ele funciona para instalar o APK direto no celular, mas a Play
-Store **recusa** qualquer app com `com.example`. Se um dia você for publicar,
-troque nos dois lugares:
+Está como `com.example.robot_controller`, o valor de exemplo que o Flutter
+gera. Funciona para instalar o APK direto no celular, mas a Play Store
+**recusa** qualquer app com `com.example`. Se um dia for publicar, troque
+nos dois lugares:
 
 - `android/app/build.gradle.kts` → `applicationId`
 - a pasta `android/app/src/main/kotlin/...` e o `package` do `MainActivity.kt`
@@ -158,8 +192,8 @@ troque nos dois lugares:
 ### Assinatura de release
 
 Todo APK precisa ser assinado. Sem nenhuma configuração, o projeto assina o
-release com a **chave de debug** — que é a mesma em todo computador do mundo.
-O APK instala e funciona, mas a Play Store recusa.
+release com a **chave de debug** — a mesma em todo computador do mundo. O
+APK instala e funciona, mas a Play Store recusa.
 
 Para usar uma chave sua, o `build.gradle.kts` já está preparado: basta criar
 os dois arquivos abaixo e o build passa a usá-los sozinho.
@@ -187,15 +221,7 @@ os dois arquivos abaixo e o build passa a usá-los sozinho.
 
 ### Arquivos que não vão para o Git
 
-- `android/local.properties` — tem os caminhos do SDK **da sua máquina**.
-  É gerado automaticamente. Foi justamente ele que veio apontando para o
-  computador do dono anterior do projeto.
+- `android/local.properties` — caminhos do SDK **da sua máquina**, gerado
+  automaticamente.
 - `build/` e `.dart_tool/` — resultado da compilação, regeráveis.
 - `*.jks` e `key.properties` — chaves de assinatura, são segredo.
-
-### Sobre a velocidade
-
-O projeto está numa pasta do Windows (`/mnt/c/...`) acessada pelo Linux. Isso
-funciona, mas é lento: um `flutter analyze` leva minutos em vez de segundos.
-Se a lentidão incomodar, mova o projeto para dentro do sistema de arquivos do
-Linux (por exemplo `~/robot_controller`) — fica muitas vezes mais rápido.
