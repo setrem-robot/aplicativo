@@ -13,7 +13,7 @@ publish_to: 'none'
 # O numero antes do "+" e a versao que aparece para o usuario (1.0.0).
 # O numero depois do "+" e o codigo interno da build: o Android exige que ele
 # AUMENTE a cada atualizacao publicada, senao recusa a instalacao por cima.
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -43,4 +43,6 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 
 flutter:
+  assets:
+    - shorebird.yaml
   uses-material-design: true

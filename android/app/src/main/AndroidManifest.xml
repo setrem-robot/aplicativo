@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Necessaria para o Shorebird baixar as atualizacoes de codigo (OTA).
+         O Flutter so injeta esta permissao nas builds de debug/profile; na
+         build de RELEASE ela precisa estar declarada aqui, senao o app sai
+         sem acesso a rede e nunca recebe patch nenhum. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>

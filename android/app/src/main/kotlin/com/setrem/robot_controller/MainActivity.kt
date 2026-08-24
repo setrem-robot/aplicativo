@@ -1,4 +1,4 @@
-package com.example.robot_controller
+package com.setrem.robot_controller
 
 import io.flutter.embedding.android.FlutterActivity
 

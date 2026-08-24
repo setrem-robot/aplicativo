@@ -26,6 +26,12 @@ pareamento prévio) e usa uma cruz direcional na tela para mandar ele andar.
   - [Testar no Android (físico ou emulador)](#testar-no-android-físico-ou-emulador)
   - [Testar no iPhone](#testar-no-iphone)
   - [Verificar o código antes de commitar](#verificar-o-código-antes-de-commitar)
+- [Atualização automática (Shorebird)](#atualização-automática-shorebird)
+  - [O ciclo normal do dia a dia](#o-ciclo-normal-do-dia-a-dia)
+  - [Quando um patch não dá conta](#quando-um-patch-não-dá-conta)
+  - [Publicar manualmente, da sua máquina](#publicar-manualmente-da-sua-máquina)
+  - [E o iOS?](#e-o-ios)
+  - [Segredos que o CI usa](#segredos-que-o-ci-usa)
 - [Como fazer as alterações mais comuns](#como-fazer-as-alterações-mais-comuns)
 - [Detalhes de configuração](#detalhes-de-configuração)
   - [Permissões](#permissões)
@@ -123,9 +129,10 @@ pedir para autorizar "instalar apps de fontes desconhecidas" na primeira vez.
 
 Para a versão final, menor e mais rápida: `flutter build apk --release`.
 
-> ⚠️ O APK de release hoje é assinado com a **chave de debug** (foi assim que
-> o projeto veio). Ele instala e funciona normalmente, mas não serve para
-> publicar na Play Store. Veja [Assinatura de release](#assinatura-de-release).
+> Este APK sai assinado com a chave do projeto (`android/robot-release.jks`) e
+> **sem o Shorebird dentro** — ou seja, ele não recebe atualização automática.
+> Para gerar o APK que se atualiza sozinho, use `shorebird release` conforme a
+> seção "Atualização automática" abaixo.
 
 ### Testar no iPhone
 
@@ -155,6 +162,73 @@ Os dois precisam passar limpos antes de você subir alterações.
 
 ---
 
+## Atualização automática (Shorebird)
+
+O app se atualiza sozinho. Quem tem o APK instalado **não precisa reinstalar
+nada** a cada mudança: o [Shorebird](https://shorebird.dev) entrega o código
+Dart novo pela internet, o app baixa em segundo plano e aplica no próximo
+abrir.
+
+### O ciclo normal do dia a dia
+
+Você mexe no código Dart, commita, dá `git push` na `main`. Só isso. O
+workflow `.github/workflows/deploy.yml` publica um **patch** e os celulares
+pegam a atualização sozinhos.
+
+### Quando um patch não dá conta
+
+Patch só troca código Dart. Ele **não** consegue trocar:
+
+- código Kotlin ou o `AndroidManifest.xml`
+- dependência nova no `pubspec.yaml` que tenha parte nativa
+- versão do Flutter
+- ícone e outros recursos Android
+
+Nesses casos, bumpe a `version:` do `pubspec.yaml` (`1.0.0+1` → `1.0.1+2`,
+lembrando que o número depois do `+` **precisa** subir) e dê push. O workflow
+detecta a versão nova, compila um **APK novo assinado** e publica numa
+[GitHub Release](../../releases). Esse APK precisa ser instalado à mão — é a
+única hora em que isso acontece.
+
+Se você mexer em código nativo e **esquecer** de bumpar a versão, o passo de
+patch falha de propósito, com a mensagem do Shorebird dizendo que detectou
+diferença nativa. É o comportamento desejado: melhor o CI falhar do que os
+celulares receberem um patch que trava o app.
+
+### Publicar manualmente, da sua máquina
+
+```bash
+export PATH="$HOME/.shorebird/bin:$PATH"
+
+shorebird patch --platforms=android --release-version=1.0.1+2   # atualização OTA
+shorebird release --platforms=android --artifact=apk            # APK novo
+```
+
+### E o iOS?
+
+A esteira cobre **só o Android**. O Shorebird suporta iOS, mas compilar para
+iOS exige um runner `macos` no GitHub Actions (mais caro que o `ubuntu`) e uma
+conta paga no Apple Developer Program para assinar. Enquanto o iOS for
+instalado à mão pelo Xcode, ele não recebe as atualizações automáticas — cada
+mudança exige recompilar e reinstalar pelo Mac.
+
+### Segredos que o CI usa
+
+Ficam em **Settings → Secrets and variables → Actions** do repositório:
+
+| Segredo | O que é |
+|---|---|
+| `SHOREBIRD_TOKEN` | API key criada em [console.shorebird.dev](https://console.shorebird.dev) |
+| `ANDROID_KEYSTORE_BASE64` | o `android/robot-release.jks` em base64 |
+| `ANDROID_KEYSTORE_PASSWORD` | a senha do keystore |
+| `ANDROID_KEY_ALIAS` | o alias da chave (`robot`) |
+
+O keystore **não está no Git** (é segredo). Guarde uma cópia dele fora do
+projeto: perdê-lo significa não conseguir mais atualizar o app instalado nos
+celulares — só reinstalando do zero.
+
+---
+
 ## Como fazer as alterações mais comuns
 
 | Quero mudar... | Mexa em... |
@@ -181,19 +255,25 @@ ela o app crasha ao tentar usar Bluetooth.
 
 ### Identificador do app (`applicationId`)
 
-Está como `com.example.robot_controller`, o valor de exemplo que o Flutter
-gera. Funciona para instalar o APK direto no celular, mas a Play Store
-**recusa** qualquer app com `com.example`. Se um dia for publicar, troque
-nos dois lugares:
+É `com.setrem.robot_controller`. Era `com.example.robot_controller` (o valor de
+exemplo que o Flutter gera, que a Play Store recusa) e foi trocado antes de o
+app começar a ser distribuído — de propósito, porque **trocar depois é caro**:
+para o Android, um `applicationId` diferente é outro app, então a atualização
+não instala por cima e todo mundo precisa desinstalar antes.
 
-- `android/app/build.gradle.kts` → `applicationId`
+Se algum dia precisar mudar de novo, são dois lugares:
+
+- `android/app/build.gradle.kts` → `applicationId` e `namespace`
 - a pasta `android/app/src/main/kotlin/...` e o `package` do `MainActivity.kt`
 
 ### Assinatura de release
 
 Todo APK precisa ser assinado. Sem nenhuma configuração, o projeto assina o
-release com a **chave de debug** — a mesma em todo computador do mundo. O
-APK instala e funciona, mas a Play Store recusa.
+release com a **chave de debug** — que é gerada por máquina. O APK instala e
+funciona, mas dois APKs assinados por chaves diferentes não se atualizam: o
+Android trata a troca de assinatura como app estranho e recusa a instalação
+por cima. Por isso o projeto tem uma chave própria (`android/robot-release.jks`),
+usada tanto aqui quanto pelo CI.
 
 Para usar uma chave sua, o `build.gradle.kts` já está preparado: basta criar
 os dois arquivos abaixo e o build passa a usá-los sozinho.
