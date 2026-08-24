@@ -53,14 +53,22 @@ class _ConnectScreenState extends State<ConnectScreen>
   }
 
   /// Sem permissao o SO devolve lista vazia sem erro (dificil de depurar).
-  /// `permission_handler` nao tem implementacao para desktop -- pular fora
-  /// de Android/iOS evita `MissingPluginException`.
+  ///
+  /// So o Android pede alguma coisa aqui, e a diferenca nao e cosmetica: no
+  /// iOS o BLE nao usa permissao de localizacao, e pedir uma permissao sem a
+  /// chave de descricao correspondente no `Info.plist` **derruba o app na
+  /// hora** -- a Apple mata o processo, nao e um aviso. O Bluetooth em si o
+  /// iOS pede sozinho, na primeira vez que o app liga o radio, usando a
+  /// `NSBluetoothAlwaysUsageDescription` que ja esta declarada la.
+  ///
+  /// `permission_handler` tambem nao tem implementacao para desktop, entao
+  /// sair fora dele evita `MissingPluginException` no Windows e no Linux.
   Future<void> _setUpAndScan() async {
-    final isMobile = defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS;
-
-    if (isMobile) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
       await [
+        // `bluetoothScan` e `bluetoothConnect` sao do Android 12+; nas versoes
+        // anteriores o proprio plugin traduz para a permissao de localizacao,
+        // que era o que o Android exigia para escanear BLE.
         Permission.bluetoothScan,
         Permission.bluetoothConnect,
         Permission.locationWhenInUse,
