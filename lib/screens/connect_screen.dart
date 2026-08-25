@@ -162,7 +162,7 @@ class _ConnectScreenState extends State<ConnectScreen>
         ),
         const SizedBox(height: AppSpacing.small),
         const Text(
-          'Procurando seu robo por Bluetooth',
+          'Procurando seu robo por Bluetooth Low Energy',
           style: TextStyle(fontSize: 15, color: Colors.white38),
         ),
       ],
