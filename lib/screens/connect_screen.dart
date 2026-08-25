@@ -8,6 +8,8 @@ import 'package:permission_handler/permission_handler.dart';
 import '../app/theme.dart';
 import '../services/robot_connection.dart';
 import '../widgets/device_tile.dart';
+import '../widgets/brand_glow.dart';
+import '../widgets/radar_pulse.dart';
 import 'control_screen.dart';
 
 /// PRIMEIRA TELA DO APP: escaneia por robos anunciando o servico BLE do
@@ -28,25 +30,22 @@ class _ConnectScreenState extends State<ConnectScreen>
   bool _isScanning = false;
   String? _connectingId;
 
-  late final AnimationController _pulseController;
-  late final Animation<double> _pulseAnimation;
+  /// Anima a entrada da tela. Roda uma vez so, na abertura.
+  late final AnimationController _enterController;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
+    _enterController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-    _pulseAnimation = Tween(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
+      duration: AppDurations.enter,
+    )..forward();
     _setUpAndScan();
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
+    _enterController.dispose();
     _scanSub?.cancel();
     _robot.stopScan();
     super.dispose();
@@ -119,21 +118,52 @@ class _ConnectScreenState extends State<ConnectScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.large),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              _buildHeader(),
-              const SizedBox(height: 40),
-              _buildPulsingIcon(),
-              const SizedBox(height: 40),
-              Expanded(child: _buildDeviceList()),
-            ],
+      body: Stack(
+        children: [
+          const BrandGlow(),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.large),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  // Os tres blocos entram em sequencia, de cima para baixo.
+                  // O olho segue a ordem em vez de receber a tela pronta de
+                  // uma vez -- e o que faz a abertura parecer calma.
+                  _entrance(order: 0, child: _buildHeader()),
+                  const SizedBox(height: 36),
+                  _entrance(order: 1, child: Center(child: _buildRadar())),
+                  const SizedBox(height: 36),
+                  Expanded(
+                    child: _entrance(order: 2, child: _buildDeviceList()),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+
+  /// Fade + sobe alguns pixels, com atraso proporcional a [order].
+  Widget _entrance({required int order, required Widget child}) {
+    // Interval recorta um pedaco do controller para cada bloco: o de baixo so
+    // comeca quando o de cima ja esta na metade.
+    final curve = CurvedAnimation(
+      parent: _enterController,
+      curve: Interval(order * 0.15, 0.7 + order * 0.1, curve: Curves.easeOut),
+    );
+
+    return FadeTransition(
+      opacity: curve,
+      child: SlideTransition(
+        position: Tween(
+          begin: const Offset(0, 0.08),
+          end: Offset.zero,
+        ).animate(curve),
+        child: child,
       ),
     );
   }
@@ -151,13 +181,23 @@ class _ConnectScreenState extends State<ConnectScreen>
       children: [
         const Text('ATLAS', style: titleStyle),
         // FittedBox+scaleDown: "CONTROLLER" nao cabe em 40pt em tela estreita
-        // e estouraria com a listra de overflow sem isso.
+        // e estouraria com a listra de overflow sem isso. O selo "v2" entra
+        // dentro do mesmo FittedBox para encolher junto com a palavra, em vez
+        // de continuar grande e empurrar o texto.
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: ShaderMask(
-            shaderCallback: AppColors.brandGradient.createShader,
-            child: const Text('CONTROLLER', style: titleStyle),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ShaderMask(
+                shaderCallback: AppColors.brandGradient.createShader,
+                child: const Text('CONTROLLER', style: titleStyle),
+              ),
+              const SizedBox(width: 10),
+              const _VersionBadge(),
+            ],
           ),
         ),
         const SizedBox(height: AppSpacing.small),
@@ -169,29 +209,7 @@ class _ConnectScreenState extends State<ConnectScreen>
     );
   }
 
-  Widget _buildPulsingIcon() {
-    return Center(
-      child: AnimatedBuilder(
-        animation: _pulseAnimation,
-        builder: (_, child) =>
-            Transform.scale(scale: _pulseAnimation.value, child: child),
-        child: Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.primary.withValues(alpha: 0.2),
-            border: Border.all(color: AppColors.primary, width: 2),
-          ),
-          child: const Icon(
-            Icons.bluetooth,
-            color: AppColors.primary,
-            size: 52,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildRadar() => RadarPulse(isScanning: _isScanning);
 
   Widget _buildDeviceList() {
     return Column(
@@ -226,21 +244,35 @@ class _ConnectScreenState extends State<ConnectScreen>
         ),
         const SizedBox(height: 12),
         Expanded(
-          child: _results.isEmpty && !_isScanning
-              ? _buildEmptyState()
-              : ListView.separated(
-                  itemCount: _results.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) {
-                    final device = _results[i].device;
-                    final isBusy = _connectingId != null;
-                    return DeviceTile(
-                      device: device,
-                      isConnecting: _connectingId == device.remoteId.str,
-                      onTap: isBusy ? null : () => _connect(device),
-                    );
-                  },
-                ),
+          // Sem o AnimatedSwitcher, o "Nenhum robo encontrado" era trocado
+          // pela lista num corte seco no meio do escaneamento.
+          child: AnimatedSwitcher(
+            duration: AppDurations.swap,
+            child: _results.isEmpty && !_isScanning
+                ? _buildEmptyState()
+                : ListView.separated(
+                    // A key diz ao AnimatedSwitcher que isto e outro widget:
+                    // sem ela ele nao percebe a troca e nao anima nada.
+                    key: const ValueKey('lista'),
+                    itemCount: _results.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (_, i) {
+                      final device = _results[i].device;
+                      final isBusy = _connectingId != null;
+                      return _TileEntrance(
+                        // A key e o endereco BLE: sem ela o Flutter reusaria
+                        // a posicao da lista e um robo novo herdaria a
+                        // animacao ja terminada do que estava ali antes.
+                        key: ValueKey(device.remoteId.str),
+                        child: DeviceTile(
+                          device: device,
+                          isConnecting: _connectingId == device.remoteId.str,
+                          onTap: isBusy ? null : () => _connect(device),
+                        ),
+                      );
+                    },
+                  ),
+          ),
         ),
         const SizedBox(height: AppSpacing.medium),
         _buildScanHint(),
@@ -250,6 +282,7 @@ class _ConnectScreenState extends State<ConnectScreen>
 
   Widget _buildEmptyState() {
     return const Center(
+      key: ValueKey('vazio'),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -289,6 +322,77 @@ class _ConnectScreenState extends State<ConnectScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// O selo "v2" ao lado do titulo.
+class _VersionBadge extends StatelessWidget {
+  const _VersionBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        gradient: AppColors.brandGradient,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text(
+        'v2',
+        style: TextStyle(
+          // Escuro sobre o degrade da marca: o degrade e verde claro nas duas
+          // pontas e engoliria texto branco.
+          color: AppColors.onBrand,
+          fontSize: 16,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+/// Faz um robo recem-descoberto entrar deslizando da direita, em vez de
+/// aparecer de estalo no meio da lista.
+class _TileEntrance extends StatefulWidget {
+  const _TileEntrance({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<_TileEntrance> createState() => _TileEntranceState();
+}
+
+class _TileEntranceState extends State<_TileEntrance>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: AppDurations.swap,
+  )..forward();
+
+  late final Animation<double> _curve = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutCubic,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _curve,
+      child: SlideTransition(
+        position: Tween(
+          begin: const Offset(0.12, 0),
+          end: Offset.zero,
+        ).animate(_curve),
+        child: widget.child,
       ),
     );
   }

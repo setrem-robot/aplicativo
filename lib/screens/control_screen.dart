@@ -4,6 +4,7 @@ import '../app/theme.dart';
 import '../models/robot_command.dart';
 import '../services/robot_connection.dart';
 import '../widgets/app_card.dart';
+import '../widgets/brand_glow.dart';
 import '../widgets/direction_pad.dart';
 
 /// SEGUNDA TELA DO APP: o controle do robo.
@@ -23,29 +24,34 @@ class ControlScreen extends StatelessWidget {
       listenable: robot,
       builder: (context, _) {
         return Scaffold(
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.large,
-                vertical: 20,
-              ),
-              child: Column(
-                children: [
-                  _TopBar(robot: robot),
-                  const SizedBox(height: 20),
-                  _StatusCard(robot: robot),
-                  const Spacer(),
-                  DirectionPad(
-                    enabled: robot.isConnected,
-                    onPress: robot.send,
-                    onRelease: () => robot.send(RobotCommand.stop),
+          body: Stack(
+            children: [
+              const BrandGlow(alignment: Alignment(0, 0.35)),
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.large,
+                    vertical: 20,
                   ),
-                  const Spacer(),
-                  const _CommandLegend(),
-                  const SizedBox(height: AppSpacing.medium),
-                ],
+                  child: Column(
+                    children: [
+                      _TopBar(robot: robot),
+                      const SizedBox(height: 20),
+                      _StatusCard(robot: robot),
+                      const Spacer(),
+                      DirectionPad(
+                        enabled: robot.isConnected,
+                        onPress: robot.send,
+                        onRelease: () => robot.send(RobotCommand.stop),
+                      ),
+                      const Spacer(),
+                      const _CommandLegend(),
+                      const SizedBox(height: AppSpacing.medium),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         );
       },
@@ -96,21 +102,17 @@ class _TopBar extends StatelessWidget {
               ),
               Row(
                 children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: connected ? AppColors.success : Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+                  _StatusDot(connected: connected),
                   const SizedBox(width: 5),
-                  Text(
-                    connected ? 'Conectado' : 'Desconectado',
+                  // AnimatedDefaultTextStyle: a cor viaja de verde a vermelho
+                  // quando a conexao cai, em vez de trocar num quadro so.
+                  AnimatedDefaultTextStyle(
+                    duration: AppDurations.swap,
                     style: TextStyle(
                       color: connected ? AppColors.success : Colors.red,
                       fontSize: 12,
                     ),
+                    child: Text(connected ? 'Conectado' : 'Desconectado'),
                   ),
                 ],
               ),
@@ -124,7 +126,7 @@ class _TopBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
           ),
           child: const Text(
-            'ROBO',
+            'ATLAS v2',
             style: TextStyle(
               // Escuro, e nao branco: este selo e pintado com o degrade da
               // marca, que agora e verde claro nas duas pontas. Texto branco
@@ -175,17 +177,27 @@ class _StatusCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  connected ? robot.lastCommand.label : 'CONEXAO PERDIDA',
-                  style: TextStyle(
-                    color: !connected
-                        ? Colors.redAccent
-                        : isMoving
-                        ? AppColors.primary
-                        : Colors.white54,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
+                // O rotulo muda a cada toque na cruz. Trocar o texto seco
+                // fazia a linha "piscar"; com o switcher ele se dissolve.
+                AnimatedSwitcher(
+                  duration: AppDurations.press,
+                  child: Text(
+                    connected ? robot.lastCommand.label : 'CONEXAO PERDIDA',
+                    // A key e o proprio texto: sem ela o switcher acha que e
+                    // o mesmo widget e nao anima a troca.
+                    key: ValueKey(
+                      connected ? robot.lastCommand : 'perdida',
+                    ),
+                    style: TextStyle(
+                      color: !connected
+                          ? Colors.redAccent
+                          : isMoving
+                              ? AppColors.primary
+                              : Colors.white54,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
                   ),
                 ),
               ],
@@ -238,6 +250,81 @@ class _CommandLegend extends StatelessWidget {
           );
         }).toList(),
       ),
+    );
+  }
+}
+
+/// O pontinho ao lado de "Conectado".
+///
+/// Quando conectado ele respira devagar; caido, fica parado em vermelho. Um
+/// ponto que pulsa diz "o link esta vivo agora" -- um ponto verde parado
+/// poderia ser so uma tela congelada.
+class _StatusDot extends StatefulWidget {
+  const _StatusDot({required this.connected});
+
+  final bool connected;
+
+  @override
+  State<_StatusDot> createState() => _StatusDotState();
+}
+
+class _StatusDotState extends State<_StatusDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.connected) _controller.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(_StatusDot old) {
+    super.didUpdateWidget(old);
+    if (widget.connected == old.connected) return;
+    if (widget.connected) {
+      _controller.repeat(reverse: true);
+    } else {
+      // Volta ao brilho cheio antes de parar: congelar no meio do ciclo
+      // deixaria o ponto vermelho apagado pela metade.
+      _controller.animateTo(0, duration: AppDurations.swap);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.connected ? AppColors.success : Colors.red;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, __) {
+        // O halo cresce e some junto com o ciclo.
+        final t = _controller.value;
+        return Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.5 * (1 - t)),
+                blurRadius: 4 + 6 * t,
+                spreadRadius: 1 + 2 * t,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
