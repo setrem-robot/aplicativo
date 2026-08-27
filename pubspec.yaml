@@ -13,7 +13,7 @@ publish_to: 'none'
 # O numero antes do "+" e a versao que aparece para o usuario (1.0.0).
 # O numero depois do "+" e o codigo interno da build: o Android exige que ele
 # AUMENTE a cada atualizacao publicada, senao recusa a instalacao por cima.
-version: 1.1.2+4
+version: 1.1.3+5
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

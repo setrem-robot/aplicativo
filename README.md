@@ -108,9 +108,18 @@ Para entregar um APK que já vem configurado:
 
 ```bash
 flutter build apk --release \
-  --dart-define=ATLAS_API_URL=https://api.seudominio.com.br \
+  --dart-define=ATLAS_API_URL=https://atlas.kerlonr.com.br \
   --dart-define=ATLAS_API_TOKEN=o-token-do-.env-da-VM
 ```
+
+> ⚠️ **Instalar por cima não aplica esses valores.** O que a build embute é
+> só o *padrão de quando não há nada gravado*, e o que a pessoa salvou na tela
+> de ajustes fica no aparelho e sobrevive à atualização. Quem já usou o app com
+> um endereço antigo continua com ele, e o sintoma é o app novo falhando
+> exatamente como o velho — o que faz procurar erro na build, que está certa.
+>
+> Para o APK configurado valer: **desinstalar antes de instalar**. Ou corrigir
+> à mão nos ajustes, que dá no mesmo mas exige digitar o token.
 
 ### Ainda não há dados?
 
