@@ -29,7 +29,7 @@ dependencies:
   flutter_blue_plus: ^2.3.12
 
   # Pede as permissoes de Bluetooth e Localizacao ao Android.
-  permission_handler: ^11.0.1
+  permission_handler: ^13.0.1
 
   cupertino_icons: ^1.0.6
 
