@@ -7,10 +7,19 @@ do projeto maior).
 
 ## Regra de ouro do projeto (de `ARQUITETURA.md`)
 
-> As telas não sabem o que é Bluetooth. O Bluetooth não sabe o que é tela.
+> As telas não sabem de onde vêm os dados. Quem busca os dados não sabe o que
+> é tela.
 
-Só `lib/services/robot_connection.dart` fala com o rádio. Se for mexer em
-como o app se comunica com o robô, é ali — nada mais deveria precisar mudar.
+São **dois** serviços, e nenhuma tela fala direto com rádio nem com rede:
+
+- `lib/services/robot_connection.dart` — o BLE. Mexeu em como o app conversa
+  com o robô? É ali, e nada mais deveria mudar.
+- `lib/services/telemetry_api.dart` — o HTTP da telemetria. É o único arquivo
+  do app que sabe o que é uma requisição.
+
+A diferença entre os dois não é só de transporte: o BLE só funciona perto do
+robô ligado, e a API funciona de qualquer lugar, com ele desligado. É por isso
+que a tela de dados sai da tela de *conexão*, e não da de controle.
 
 ## BLE, não Bluetooth Classic
 
@@ -44,6 +53,34 @@ arquitetura do app:
   check de `defaultTargetPlatform` — não peça permissões fora de
   Android/iOS, vai lançar `MissingPluginException`.
 
+## Telemetria: o app lê um banco na nuvem
+
+O robô grava o que faz num TimescaleDB numa VM do LARCC; o app lê por uma API
+HTTP (FastAPI), publicada num domínio pelo Cloudflare Tunnel. O contrato está
+em `../orquestrador/docs/setup-cloud.md`, e a API em `../orquestrador/cloud/api/`.
+
+- **Endereço e token** ficam em `SharedPreferences`, editáveis em
+  `ajustes_api_screen.dart`. Para um APK já configurado, use
+  `--dart-define=ATLAS_API_URL=...` e `--dart-define=ATLAS_API_TOKEN=...`.
+- **`SharedPreferences` não é cofre.** O token é legível num aparelho com root
+  ou num backup. É aceitável porque ele só dá leitura da telemetria de um robô
+  escolar; se um dia der acesso a mais que isso, o lugar passa a ser
+  `flutter_secure_storage`.
+- **Mapa**: `flutter_map` + OpenStreetMap, sem chave de API e sem conta de
+  faturamento. A atribuição no rodapé do mapa é exigida pela licença (ODbL) —
+  não remova.
+- **Sem dados para testar?** `python3 cloud/scripts/semear-demonstracao.py`
+  no repositório do orquestrador enche o banco com um trajeto plausível.
+
+## `kotlin.incremental=false` no `android/gradle.properties`
+
+Sem essa linha o build morre em `:shared_preferences_android:compileDebugKotlin`
+com *"Could not close incremental caches"* — o compilador não consegue fechar os
+arquivos de cache que ele mesmo abriu, o que acontece com o projeto num drive
+montado (`D:\` visto do WSL) ou com antivírus segurando os arquivos.
+Reproduzível depois de um `flutter clean` completo. O custo é build seguinte
+mais lento; o APK gerado é o mesmo.
+
 ## Comandos úteis
 
 ```bash
@@ -51,4 +88,9 @@ flutter analyze   # deve estar sempre limpo
 flutter test      # test/direction_pad_test.dart, test/robot_command_test.dart
 flutter run -d linux   # roda aqui mesmo, com Bluetooth real
 flutter build apk --debug   # gera APK pra testar em Android físico
+
+# APK já apontando para a API, sem precisar configurar na tela:
+flutter build apk --release \
+  --dart-define=ATLAS_API_URL=https://api.seudominio.com.br \
+  --dart-define=ATLAS_API_TOKEN=o-token-do-.env-da-VM
 ```

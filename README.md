@@ -20,6 +20,7 @@ pareamento prévio) e usa uma cruz direcional na tela para mandar ele andar.
 ## Índice
 
 - [Como o app funciona, em 30 segundos](#como-o-app-funciona-em-30-segundos)
+- [Os dados do robô](#os-dados-do-robô)
 - [Rodando o projeto](#rodando-o-projeto)
   - [Primeira vez (depois de clonar)](#primeira-vez-depois-de-clonar)
   - [Testar no Linux (desktop, com Bluetooth real)](#testar-no-linux-desktop-com-bluetooth-real)
@@ -43,17 +44,29 @@ pareamento prévio) e usa uma cruz direcional na tela para mandar ele andar.
 │                 │                        │                 │
 │ escaneia e      │ ◄──────────────────── │ cruz direcional │
 │ lista por perto │   botão desconectar    │ + status        │
-└─────────────────┘                        └─────────────────┘
+└────────┬────────┘                        └────────┬────────┘
          │                                          │
-         └──────────────┬───────────────────────────┘
-                        ▼
-              ┌───────────────────┐
-              │  RobotConnection  │  ← o único que fala com o Bluetooth
-              └───────────────────┘
-                        │
-                        ▼
-                   🤖 ESP32
+         │ "Dados do robô"                          │
+         ▼                                          ▼
+┌──────────────────┐                      ┌───────────────────┐
+│ TelemetriaScreen │                      │  RobotConnection  │
+│ agora · trajeto  │                      │  o único que fala │
+│ histórico · logs │                      │  com o Bluetooth  │
+└────────┬─────────┘                      └─────────┬─────────┘
+         │                                          │
+         ▼                                          ▼
+┌──────────────────┐                            🤖 o robô
+│   TelemetryApi   │  ← o único que fala HTTP
+└────────┬─────────┘
+         ▼
+  ☁️ TimescaleDB (VM do LARCC)
 ```
+
+**Dois caminhos, e eles são independentes.** O Bluetooth manda comandos e só
+funciona perto do robô ligado. A API lê o histórico e funciona de qualquer
+lugar — inclusive com o robô desligado. É por isso que a tela de dados sai da
+tela de conexão, e não da de controle: ver onde o robô andou ontem não deveria
+exigir parear nada.
 
 Cada toque num botão envia uma linha de texto pelo Bluetooth:
 
@@ -69,6 +82,48 @@ O robô anda **enquanto o dedo está pressionando** o botão. Ao soltar, o app
 manda `S` automaticamente — inclusive se o dedo escorregar para fora do botão.
 
 Para o mapa detalhado dos arquivos, veja **[ARQUITETURA.md](ARQUITETURA.md)**.
+
+---
+
+## Os dados do robô
+
+A tela **Dados do robô** (na tela de conexão) mostra o que o robô gravou no
+banco da nuvem, em quatro abas:
+
+| Aba | Responde |
+|---|---|
+| **Agora** | bateria, posição, motores e rede — cada um com a idade do dado |
+| **Trajeto** | por onde ele andou, no mapa |
+| **Histórico** | como bateria, tensão, velocidade ou satélites mudaram |
+| **Eventos** | as mensagens cruas, com o JSON completo |
+
+### Configurar
+
+Na primeira vez o app pede o endereço e o token. Os dois vêm de quem instalou a
+nuvem — o endereço é o domínio publicado pelo túnel da Cloudflare, e o token é o
+`API_TOKEN` do `.env` da VM. Veja `docs/setup-cloud.md` no repositório do
+orquestrador.
+
+Para entregar um APK que já vem configurado:
+
+```bash
+flutter build apk --release \
+  --dart-define=ATLAS_API_URL=https://api.seudominio.com.br \
+  --dart-define=ATLAS_API_TOKEN=o-token-do-.env-da-VM
+```
+
+### Ainda não há dados?
+
+O GPS ainda não está montado e ninguém publica bateria — as telas ficariam
+vazias, e tela vazia não distingue "o app está errado" de "não há o que
+mostrar". Na VM:
+
+```bash
+python3 cloud/scripts/semear-demonstracao.py --horas 6
+```
+
+Isso gera um trajeto plausível em volta do campus, bateria descarregando e
+comandos de motor. Para remover: `--limpar`.
 
 ---
 
