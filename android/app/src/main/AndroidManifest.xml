@@ -6,6 +6,10 @@
          `src/debug/` e `src/profile/` (é o que o hot reload precisa), e assume
          que quem fala com a rede a declare aqui.
 
+         Duas coisas dependem dela, e as duas quebram do mesmo jeito silencioso:
+         as telas de telemetria, que falam com a API, e o Shorebird, que baixa
+         as atualizações de código sem passar pela loja.
+
          A armadilha é que tudo funciona enquanto se desenvolve, e o app
          instalado falha em toda chamada — com a mesma mensagem de "não
          consegui alcançar", que manda procurar em rede, firewall e endereço.

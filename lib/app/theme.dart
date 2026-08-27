@@ -25,6 +25,43 @@ class AppColors {
   static const Color onBrand = background;
 }
 
+/// Duracoes das animacoes. Centralizadas para o app inteiro pulsar no mesmo
+/// ritmo: animacao com duracao "escolhida na hora" em cada tela e o que faz
+/// uma interface parecer remendada.
+class AppDurations {
+  const AppDurations._();
+
+  /// Resposta a um toque. Acima de ~150ms o botao parece lento.
+  static const Duration press = Duration(milliseconds: 120);
+
+  /// Troca de conteudo (um texto que vira outro, lista que aparece).
+  static const Duration swap = Duration(milliseconds: 260);
+
+  /// Entrada dos elementos quando a tela abre.
+  static const Duration enter = Duration(milliseconds: 420);
+
+  /// Ciclo do radar de busca. Lento de proposito: rapido demais vira
+  /// estroboscopio numa tela que fica minutos aberta.
+  static const Duration radar = Duration(milliseconds: 2600);
+}
+
+/// Sombras. O app e escuro, entao "elevacao" aqui e brilho colorido, nao
+/// sombra preta -- preto sobre preto nao aparece.
+class AppShadows {
+  const AppShadows._();
+
+  /// Halo verde para o que esta ativo (botao pressionado, cartao conectado).
+  static List<BoxShadow> brandGlow({double opacity = 0.35, double blur = 18}) {
+    return [
+      BoxShadow(
+        color: AppColors.primary.withValues(alpha: opacity),
+        blurRadius: blur,
+        spreadRadius: 1,
+      ),
+    ];
+  }
+}
+
 class AppSpacing {
   const AppSpacing._();
 
@@ -32,6 +69,7 @@ class AppSpacing {
   static const double medium = 16;
   static const double large = 24;
   static const double radius = 16;
+  static const double radiusLarge = 22; // botoes do D-pad
 }
 
 class AppTheme {

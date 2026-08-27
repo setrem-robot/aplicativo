@@ -25,7 +25,7 @@ val keystoreProperties = Properties().apply {
 val hasReleaseKeystore = keystorePropertiesFile.exists()
 
 android {
-    namespace = "com.example.robot_controller"
+    namespace = "com.setrem.robot_controller"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -35,10 +35,10 @@ android {
     }
 
     defaultConfig {
-        // Identificador unico do app no Android. `com.example.*` e o valor de
-        // exemplo do Flutter: instala no celular sem problema, mas a Play
-        // Store recusa. Veja "Identificador do app" no README.
-        applicationId = "com.example.robot_controller"
+        // Identificador unico do app no Android. Nunca mude depois de
+        // distribuir: para o Android um applicationId novo e OUTRO app, entao
+        // a atualizacao nao instala por cima -- o usuario precisa desinstalar.
+        applicationId = "com.setrem.robot_controller"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -50,7 +50,10 @@ android {
             create("release") {
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = keystoreProperties.getProperty("storeFile")?.let { file(it) }
+                // rootProject aqui e a pasta `android/`. Sem isto, `file(it)`
+                // resolveria o caminho relativo contra `android/app/` e o
+                // build quebraria com "Keystore file not found".
+                storeFile = keystoreProperties.getProperty("storeFile")?.let { rootProject.file(it) }
                 storePassword = keystoreProperties.getProperty("storePassword")
             }
         }
@@ -64,6 +67,14 @@ android {
             signingConfig = if (hasReleaseKeystore) {
                 signingConfigs.getByName("release")
             } else {
+                // A chave de debug e DIFERENTE em cada maquina. Um APK assinado
+                // com ela nao instala por cima de um assinado por outra, entao
+                // a esteira de atualizacao para de funcionar. Veja o README.
+                logger.warn(
+                    "AVISO: android/key.properties nao existe -- assinando o " +
+                    "release com a chave de DEBUG. Este APK nao serve para " +
+                    "distribuir."
+                )
                 signingConfigs.getByName("debug")
             }
         }

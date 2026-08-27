@@ -19,7 +19,7 @@ class RobotControllerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Atlas Controller',
+      title: 'Atlas Controller v2',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       home: const ConnectScreen(),

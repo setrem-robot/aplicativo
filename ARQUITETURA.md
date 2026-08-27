@@ -318,9 +318,10 @@ Coisas que estavam quebradas e foram corrigidas, para referência:
 
 Pendências conhecidas, para decidir depois:
 
-- `applicationId` ainda é `com.example.robot_controller` — impede publicar na
-  Play Store, mas não atrapalha instalar o APK direto.
-- O APK de release é assinado com a chave de debug.
+- ~~`applicationId` ainda é `com.example.robot_controller`~~ — resolvido: agora
+  é `com.setrem.robot_controller`.
+- ~~O APK de release é assinado com a chave de debug.~~ — resolvido: existe uma
+  chave própria em `android/robot-release.jks`, espelhada no CI.
 - ~~`flutter_bluetooth_serial` está sem manutenção desde 2021...~~ — resolvido:
   o projeto migrou de Bluetooth Classic (SPP) para BLE, usando
   `flutter_blue_plus`. Isso também foi o que permitiu suporte a iOS (o

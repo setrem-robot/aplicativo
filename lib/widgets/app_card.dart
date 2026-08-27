@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../app/theme.dart';
 
 /// O "cartao" escuro de cantos arredondados usado em quase toda tela.
-class AppCard extends StatelessWidget {
+class AppCard extends StatefulWidget {
   const AppCard({
     super.key,
     required this.child,
@@ -22,23 +22,52 @@ class AppCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<AppCard> createState() => _AppCardState();
+}
+
+class _AppCardState extends State<AppCard> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final card = Container(
-      padding: padding,
+    final highlighted = widget.borderColor != null;
+
+    // AnimatedContainer, e nao Container: quando `borderColor` muda (o cartao
+    // do robo que voce acabou de tocar fica verde), a borda transita em vez
+    // de piscar de uma cor para a outra.
+    final card = AnimatedContainer(
+      duration: AppDurations.press,
+      padding: widget.padding,
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppSpacing.radius),
         border: Border.all(
-          color: borderColor ?? Colors.white.withValues(alpha: 0.07),
+          color: widget.borderColor ?? Colors.white.withValues(alpha: 0.07),
           width: 1.5,
         ),
+        boxShadow: highlighted ? AppShadows.brandGlow(opacity: 0.22) : null,
       ),
-      child: child,
+      child: widget.child,
     );
 
-    if (onTap == null) return card;
+    if (widget.onTap == null) return card;
 
-    return GestureDetector(onTap: onTap, child: card);
+    // O encolhimento e o unico retorno de que o toque foi registrado: estes
+    // cartoes nao tem ripple do Material por serem Container puro.
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      // onTapCancel importa: sem ele, arrastar o dedo para fora deixaria o
+      // cartao encolhido para sempre.
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1,
+        duration: AppDurations.press,
+        curve: Curves.easeOut,
+        child: card,
+      ),
+    );
   }
 }
 
