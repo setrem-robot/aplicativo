@@ -177,6 +177,28 @@ class TelemetryApi {
     return saida;
   }
 
+  /// O Android recusou o `http://` antes de a requisição sair do aparelho?
+  ///
+  /// Desde o Android 9, texto claro é bloqueado por padrão. O sintoma engana
+  /// muito: o navegador do MESMO celular abre o MESMO endereço sem problema,
+  /// porque ele não obedece a essa política — e quem está depurando vai
+  /// procurar firewall, IP e Wi-Fi, que estão todos certos.
+  bool _ehCleartextBloqueado(Object erro) =>
+      erro.toString().toUpperCase().contains('CLEARTEXT');
+
+  /// Traduz a falha para o que a pessoa tem de conferir.
+  String _explicar(Object erro, Uri uri) {
+    if (_ehCleartextBloqueado(erro)) {
+      return 'o Android bloqueou a conexão porque o endereço é http:// e não '
+          'https://. Este app já vem configurado para permitir isso na rede '
+          'local — se está vendo esta mensagem, a versão instalada é antiga.';
+    }
+    if (uri.scheme != 'http' && uri.scheme != 'https') {
+      return 'o endereço precisa começar com http:// ou https://';
+    }
+    return 'não consegui alcançar a API — confira o endereço e a internet';
+  }
+
   Future<Map<String, dynamic>> _pegar(
     String caminho, {
     Map<String, String>? parametros,
@@ -206,7 +228,7 @@ class TelemetryApi {
       throw const ErroApi('a API não respondeu a tempo — a internet está de pé?');
     } catch (erro) {
       debugPrint('telemetria: falha de rede em $uri: $erro');
-      throw const ErroApi('não consegui alcançar a API — confira o endereço e a internet');
+      throw ErroApi(_explicar(erro, uri), podeTentarDeNovo: !_ehCleartextBloqueado(erro));
     }
 
     if (resposta.statusCode == 401) {

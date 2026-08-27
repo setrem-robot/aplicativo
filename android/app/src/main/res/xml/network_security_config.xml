@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Politica de rede do app.
+
+  POR QUE ESTE ARQUIVO EXISTE
+
+  Desde o Android 9 (API 28) o sistema BLOQUEIA requisicoes em texto claro
+  (http://) por padrao. Sem isto, o app diz "nao consegui alcancar a API"
+  enquanto o navegador do MESMO celular abre o MESMO endereco sem problema —
+  porque o navegador nao obedece a essa politica e o app obedece.
+
+  O sintoma engana: parece rede, e manda procurar firewall, IP e Wi-Fi. Nao e
+  nada disso; e o proprio Android recusando o pedido antes de ele sair do
+  aparelho.
+
+  QUANDO O TEXTO CLARO E ACEITAVEL AQUI
+
+  O ambiente de testes roda numa maquina da mesma rede, em http://IP:8000 — nao
+  ha certificado a apresentar para um IP de LAN, e emitir um para isso seria
+  trabalho sem retorno num robo de projeto escolar.
+
+  Em producao nada disso vale: a API da VM do LARCC e publicada pelo tunel da
+  Cloudflare em https://, com certificado de verdade. O `usesCleartextTraffic`
+  abaixo nao enfraquece esse caso — HTTPS continua sendo HTTPS.
+
+  O que viaja em claro na rede local e o token de LEITURA da telemetria de um
+  robo. Nao ha dinheiro nem dado de pessoa do outro lado dele.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <!-- As autoridades certificadoras do sistema. E o que valida o
+                 certificado da Cloudflare quando o endereco for https://. -->
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
