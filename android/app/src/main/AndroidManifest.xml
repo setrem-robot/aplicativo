@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Sem esta linha o app NÃO faz requisição nenhuma numa build de release.
+         O template do Flutter declara a permissão de internet apenas em
+         `src/debug/` e `src/profile/` (é o que o hot reload precisa), e assume
+         que quem fala com a rede a declare aqui.
+
+         A armadilha é que tudo funciona enquanto se desenvolve, e o app
+         instalado falha em toda chamada — com a mesma mensagem de "não
+         consegui alcançar", que manda procurar em rede, firewall e endereço.
+         Foi exatamente o que aconteceu: o navegador do celular abria a API e o
+         app não, com o Wi-Fi, o IP e o token todos certos. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
