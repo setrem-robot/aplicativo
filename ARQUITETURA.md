@@ -19,32 +19,51 @@ lib/
 │   └── theme.dart               ② cores e espaçamentos (a "identidade visual")
 │
 ├── models/
-│   └── robot_command.dart       ③ os comandos que o robô entende
+│   ├── robot_command.dart       ③ os comandos que o robô entende
+│   └── telemetria.dart          ⑧ o que a API devolve, em objetos
 │
 ├── services/
-│   └── robot_connection.dart    ④ o Bluetooth — o cérebro do app
+│   ├── robot_connection.dart    ④ o Bluetooth — o cérebro do app
+│   └── telemetry_api.dart       ⑨ o HTTP — a outra metade dos dados
 │
 ├── screens/
 │   ├── connect_screen.dart      ⑤ tela 1: escolher o robô
-│   └── control_screen.dart      ⑥ tela 2: dirigir o robô
+│   ├── control_screen.dart      ⑥ tela 2: dirigir o robô
+│   ├── telemetria_screen.dart   ⑩ tela 3: o que o robô fez (quatro abas)
+│   └── ajustes_api_screen.dart  ⑪ onde ficam os dados
 │
 └── widgets/
     ├── app_card.dart            ⑦ peças visuais reaproveitadas
     ├── device_tile.dart
-    └── direction_pad.dart
+    ├── direction_pad.dart
+    ├── carregando.dart          ⑫ o ciclo "carregando → deu certo → deu errado"
+    ├── painel_estado.dart       ⑬ as quatro abas da telemetria
+    ├── mapa_trajeto.dart
+    ├── grafico_serie.dart
+    └── lista_eventos.dart
 ```
 
 ### A regra que organiza tudo
 
-> **As telas não sabem o que é Bluetooth. O Bluetooth não sabe o que é tela.**
+> **As telas não sabem de onde vêm os dados. Quem busca os dados não sabe o
+> que é tela.**
 
-Quem conversa com o robô é o `robot_connection.dart`, e só ele. As telas
-pedem coisas para ele ("conecte neste aparelho", "mande andar pra frente") e
-mostram o que ele responde.
+Isso já valia para o Bluetooth e agora vale igual para o HTTP. Há **dois**
+serviços, e nenhuma tela fala direto com rádio ou com rede:
+
+| Serviço | De onde vêm os dados | Quando funciona |
+|---|---|---|
+| `robot_connection.dart` | o rádio BLE do robô | perto do robô, com ele ligado |
+| `telemetry_api.dart` | a API na VM do LARCC | de qualquer lugar, robô ligado ou não |
+
+Essa segunda linha é o ponto: o histórico **não depende do robô**. É por isso
+que a tela de dados é alcançada da tela de conexão, e não da de controle —
+quem abre o app para ver onde o robô andou ontem não deveria precisar parear
+nada antes.
 
 Por que isso importa na prática: se um dia você trocar o Bluetooth clássico
-por Wi-Fi ou BLE, **reescreve um arquivo só** e as duas telas continuam
-funcionando sem nenhuma alteração.
+por Wi-Fi ou BLE, **reescreve um arquivo só** e as telas continuam
+funcionando sem nenhuma alteração. O mesmo vale para trocar a API.
 
 ---
 
@@ -176,6 +195,59 @@ botão", e quem decide o que fazer é a tela de controle. É justamente por
 isso que dá para testá-lo sem celular e sem robô nenhum — veja
 `test/direction_pad_test.dart`.
 
+### ⑧⑨ `telemetria.dart` e `telemetry_api.dart` — os dados da nuvem
+
+O robô grava o que faz num TimescaleDB numa VM do LARCC. O app lê de lá por uma
+API HTTP — e é isso que permite ver o trajeto de ontem sentado em casa, com o
+robô desligado.
+
+`telemetry_api.dart` é o **único** arquivo do app que sabe o que é HTTP. Ele
+guarda o endereço e o token, monta as requisições e traduz falha de rede em
+frase que uma pessoa entende: `SocketException: Failed host lookup` vira "não
+consegui alcançar a API — confira o endereço e a internet".
+
+Repare que ele **não** é um `ChangeNotifier`, ao contrário do
+`RobotConnection`. A diferença é real: a conexão Bluetooth cai sozinha e
+precisa avisar as telas, enquanto a telemetria só chega quando alguém pede.
+Um `ChangeNotifier` aqui daria a impressão errada de que os dados se atualizam
+por conta própria.
+
+`telemetria.dart` converte o JSON em objetos, e todos os `fromJson` são
+**tolerantes**: campo ausente ou com tipo errado vira `null`, nunca exceção. O
+payload da telemetria é livre — cada grupo do projeto publica o que decidir — e
+um app que quebra a tela porque o GPS parou de mandar `satelites` seria pior
+que um que mostra um traço.
+
+### ⑩ `telemetria_screen.dart` — quatro perguntas diferentes
+
+| Aba | Responde |
+|---|---|
+| **Agora** | o robô está bem? bateria, posição, motores, rede — cada um com a idade do dado |
+| **Trajeto** | por onde ele andou? mapa com a linha do percurso |
+| **Histórico** | como isso mudou? gráfico de bateria, tensão, velocidade ou satélites |
+| **Eventos** | o que exatamente chegou? as mensagens cruas, com o JSON completo |
+
+A aba de eventos é a mais feia e a que mais salva uma depuração em campo: as
+outras três interpretam o dado, e quando é a interpretação que está errada, só
+o valor cru resolve.
+
+**Nenhum número aparece sem a idade dele.** Um painel que mostra "bateria 83%"
+com a mesma cara para um dado de agora e para um de anteontem é pior que um
+painel vazio — ele faz alguém confiar num robô que está desligado há dois dias.
+E a idade vem calculada da API, não do relógio do celular, que pode estar
+errado.
+
+### ⑫ `carregando.dart` — o ciclo repetido quatro vezes
+
+As quatro abas fazem a mesma coisa: pedem algo, mostram um giro, mostram o
+conteúdo ou o erro, e deixam tentar de novo. Escrever isso quatro vezes
+garantiria que uma delas esquecesse o "tentar de novo" — e a que esquecesse
+seria descoberta com o robô ligado, numa apresentação.
+
+Ele também separa **"deu erro"** de **"deu certo e não havia nada"**. São
+problemas com soluções opostas, e com a mesma cara na tela ninguém sabe se
+procura o defeito na API ou espera o robô ser ligado.
+
 ---
 
 ## 3. Os testes
@@ -188,6 +260,7 @@ flutter test
 |---|---|
 | `test/robot_command_test.dart` | nenhum comando repete a letra de outro |
 | `test/direction_pad_test.dart` | apertar move, soltar para, desconectado não responde |
+| `test/telemetria_test.dart` | payload torto não derruba a tela, e a idade vem da API |
 
 São poucos e rápidos, e cobrem justamente as regras que, se quebrarem, fazem
 o robô se comportar mal de um jeito difícil de perceber olhando a tela.
@@ -200,7 +273,7 @@ nunca existiu neste app e nem compilava. Foi removido.
 
 ## 4. Por que a arquitetura parou aqui
 
-O app tem cerca de 700 linhas. Existe uma tentação forte de aplicar as
+O app tem cerca de 3400 linhas. Existe uma tentação forte de aplicar as
 arquiteturas que aparecem nos tutoriais — Clean Architecture, repositórios,
 injeção de dependência, Bloc. Para este tamanho, isso adicionaria umas 15
 pastas e mais código de encanamento do que de app.
@@ -210,10 +283,22 @@ tinha (cores duplicadas, strings mágicas, estado de conexão mentiroso) sem
 criar camadas que você teria que aprender antes de conseguir mudar a cor de
 um botão.
 
-**Quando valeria a pena crescer:** se aparecerem várias telas novas, ou mais
-de um tipo de conexão (Wi-Fi + Bluetooth), ou se o app passar a guardar dados
-(histórico de trajetos, perfis de robô). Aí sim entra um gerenciador de
-estado de verdade e uma camada de dados separada. Antes disso, não.
+**A telemetria testou essa aposta, e ela se sustentou.** Chegaram quatro telas
+novas, uma segunda fonte de dados e um cache em disco — exatamente a lista do
+"quando valeria a pena crescer" que estava escrita aqui. Ainda assim, o que foi
+preciso foi um serviço a mais no mesmo formato do que já existia, e nenhum
+gerenciador de estado: as telas continuam sendo `StatefulWidget` com
+`setState`, e o `FutureBuilder` de `carregando.dart` cobre o resto.
+
+O motivo é que **nenhum estado é compartilhado entre telas**. Cada aba pergunta
+o que precisa e mostra; não há um "estado global do app" que duas telas
+precisem enxergar igual. Provider ou Bloc resolvem esse problema — e é ele que
+o app não tem.
+
+**Quando valeria a pena crescer, agora:** se as telas passarem a depender umas
+do estado das outras, se a telemetria precisar ser guardada offline para ser
+lida sem rede, ou se aparecer atualização em tempo real (WebSocket) que várias
+telas escutem ao mesmo tempo. Antes disso, não.
 
 ---
 

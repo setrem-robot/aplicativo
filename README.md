@@ -1,25 +1,46 @@
 # Atlas Controller
 
-App Android/iOS (feito em Flutter) que controla um robô com ESP32 por
-Bluetooth Low Energy (BLE). Você escaneia e conecta no robô direto (sem
-pareamento prévio) e usa uma cruz direcional na tela para mandar ele andar.
+App Android/iOS (feito em Flutter) que faz duas coisas com a **Atlas**, o robô
+do curso de Engenharia de Computação da SETREM:
+
+- **Dirigir**, por Bluetooth Low Energy — você escaneia, conecta direto (sem
+  pareamento prévio) e usa uma cruz direcional na tela.
+- **Ver os dados**, por HTTPS — bateria, posição no mapa, gráficos de histórico
+  e os eventos crus, lidos da API de telemetria.
+
+Os dois caminhos são independentes de propósito: dá para ver a telemetria de
+casa, longe do robô, e dá para dirigir sem internet nenhuma.
 
 | | |
 |---|---|
 | **Plataforma alvo** | Android e iOS |
 | **Flutter** | 3.47.0 (canal stable) |
-| **Comunicação** | BLE (GATT), serviço no padrão Nordic UART Service (NUS) |
+| **Dirigir** | BLE (GATT), serviço no padrão Nordic UART Service (NUS) |
+| **Ver os dados** | HTTPS, com token `Bearer` |
 
-> Até uma versão anterior deste app, a comunicação era por Bluetooth Classic
-> (SPP) — o que só funcionava no Android. A migração para BLE foi feita
-> justamente para permitir rodar no iOS; veja `robot_connection.dart` e o
-> firmware em `esp32_ble_bridge.ino` no repositório `orquestrador`.
+**Chegou agora?** A Atlas é maior que este repositório. São três:
+
+| Repositório | O que é | O que faz |
+|---|---|---|
+| [**aplicativo**](https://github.com/setrem-robot/aplicativo) *(este)* | o controle | dirigir o robô e ver os dados |
+| [**orquestrador**](https://github.com/setrem-robot/orquestrador) | o corpo | motores, GPS, Wi-Fi, telemetria e a nuvem |
+| [**atlas_ai_v2**](https://github.com/setrem-robot/atlas_ai_v2) | a cara | face animada, voz, IA e a ponte Bluetooth |
+
+> **Do outro lado do BLE não há mais um ESP32.** Quem anuncia o serviço hoje é o
+> próprio Raspberry Pi, em `src/roboteye/ble/` no repositório da cara — o Pi 5
+> tem Bluetooth próprio, e a placa extra deixou de fazer sentido. Para o app não
+> mudou nada: os UUIDs e o formato da mensagem (`{"cmd":"F"}\n`) são os mesmos,
+> e o firmware do ESP32 continua funcionando como reserva.
+>
+> Antes disso a comunicação era Bluetooth Classic (SPP), que só existe no
+> Android. A migração para BLE foi o que permitiu rodar no iOS.
 
 ---
 
 ## Índice
 
 - [Como o app funciona, em 30 segundos](#como-o-app-funciona-em-30-segundos)
+- [Os dados do robô](#os-dados-do-robô)
 - [Rodando o projeto](#rodando-o-projeto)
   - [Primeira vez (depois de clonar)](#primeira-vez-depois-de-clonar)
   - [Testar no Linux (desktop, com Bluetooth real)](#testar-no-linux-desktop-com-bluetooth-real)
@@ -49,17 +70,29 @@ pareamento prévio) e usa uma cruz direcional na tela para mandar ele andar.
 │                 │                        │                 │
 │ escaneia e      │ ◄──────────────────── │ cruz direcional │
 │ lista por perto │   botão desconectar    │ + status        │
-└─────────────────┘                        └─────────────────┘
+└────────┬────────┘                        └────────┬────────┘
          │                                          │
-         └──────────────┬───────────────────────────┘
-                        ▼
-              ┌───────────────────┐
-              │  RobotConnection  │  ← o único que fala com o Bluetooth
-              └───────────────────┘
-                        │
-                        ▼
-                   🤖 ESP32
+         │ "Dados do robô"                          │
+         ▼                                          ▼
+┌──────────────────┐                      ┌───────────────────┐
+│ TelemetriaScreen │                      │  RobotConnection  │
+│ agora · trajeto  │                      │  o único que fala │
+│ histórico · logs │                      │  com o Bluetooth  │
+└────────┬─────────┘                      └─────────┬─────────┘
+         │                                          │
+         ▼                                          ▼
+┌──────────────────┐                            🤖 o robô
+│   TelemetryApi   │  ← o único que fala HTTP
+└────────┬─────────┘
+         ▼
+  ☁️ TimescaleDB (VM do LARCC)
 ```
+
+**Dois caminhos, e eles são independentes.** O Bluetooth manda comandos e só
+funciona perto do robô ligado. A API lê o histórico e funciona de qualquer
+lugar — inclusive com o robô desligado. É por isso que a tela de dados sai da
+tela de conexão, e não da de controle: ver onde o robô andou ontem não deveria
+exigir parear nada.
 
 Cada toque num botão envia uma linha de texto pelo Bluetooth:
 
@@ -75,6 +108,57 @@ O robô anda **enquanto o dedo está pressionando** o botão. Ao soltar, o app
 manda `S` automaticamente — inclusive se o dedo escorregar para fora do botão.
 
 Para o mapa detalhado dos arquivos, veja **[ARQUITETURA.md](ARQUITETURA.md)**.
+
+---
+
+## Os dados do robô
+
+A tela **Dados do robô** (na tela de conexão) mostra o que o robô gravou no
+banco da nuvem, em quatro abas:
+
+| Aba | Responde |
+|---|---|
+| **Agora** | bateria, posição, motores e rede — cada um com a idade do dado |
+| **Trajeto** | por onde ele andou, no mapa |
+| **Histórico** | como bateria, tensão, velocidade ou satélites mudaram |
+| **Eventos** | as mensagens cruas, com o JSON completo |
+
+### Configurar
+
+Na primeira vez o app pede o endereço e o token. Os dois vêm de quem instalou a
+nuvem — o endereço é o domínio publicado pelo túnel da Cloudflare, e o token é o
+`API_TOKEN` do `.env` da VM. Veja `docs/setup-cloud.md` no repositório do
+orquestrador.
+
+Para entregar um APK que já vem configurado:
+
+```bash
+flutter build apk --release \
+  --dart-define=ATLAS_API_URL=https://atlas.kerlonr.com.br \
+  --dart-define=ATLAS_API_TOKEN=o-token-do-.env-da-VM
+```
+
+> ⚠️ **Instalar por cima não aplica esses valores.** O que a build embute é
+> só o *padrão de quando não há nada gravado*, e o que a pessoa salvou na tela
+> de ajustes fica no aparelho e sobrevive à atualização. Quem já usou o app com
+> um endereço antigo continua com ele, e o sintoma é o app novo falhando
+> exatamente como o velho — o que faz procurar erro na build, que está certa.
+>
+> Para o APK configurado valer: **desinstalar antes de instalar**. Ou corrigir
+> à mão nos ajustes, que dá no mesmo mas exige digitar o token.
+
+### Ainda não há dados?
+
+O GPS ainda não está montado e ninguém publica bateria — as telas ficariam
+vazias, e tela vazia não distingue "o app está errado" de "não há o que
+mostrar". Na VM:
+
+```bash
+python3 cloud/scripts/semear-demonstracao.py --horas 6
+```
+
+Isso gera um trajeto plausível em volta do campus, bateria descarregando e
+comandos de motor. Para remover: `--limpar`.
 
 ---
 

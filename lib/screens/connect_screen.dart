@@ -7,10 +7,12 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../app/theme.dart';
 import '../services/robot_connection.dart';
+import '../widgets/app_card.dart';
 import '../widgets/device_tile.dart';
 import '../widgets/brand_glow.dart';
 import '../widgets/radar_pulse.dart';
 import 'control_screen.dart';
+import 'telemetria_screen.dart';
 
 /// PRIMEIRA TELA DO APP: escaneia por robos anunciando o servico BLE do
 /// Atlas e, ao conectar, abre a [ControlScreen].
@@ -52,14 +54,22 @@ class _ConnectScreenState extends State<ConnectScreen>
   }
 
   /// Sem permissao o SO devolve lista vazia sem erro (dificil de depurar).
-  /// `permission_handler` nao tem implementacao para desktop -- pular fora
-  /// de Android/iOS evita `MissingPluginException`.
+  ///
+  /// So o Android pede alguma coisa aqui, e a diferenca nao e cosmetica: no
+  /// iOS o BLE nao usa permissao de localizacao, e pedir uma permissao sem a
+  /// chave de descricao correspondente no `Info.plist` **derruba o app na
+  /// hora** -- a Apple mata o processo, nao e um aviso. O Bluetooth em si o
+  /// iOS pede sozinho, na primeira vez que o app liga o radio, usando a
+  /// `NSBluetoothAlwaysUsageDescription` que ja esta declarada la.
+  ///
+  /// `permission_handler` tambem nao tem implementacao para desktop, entao
+  /// sair fora dele evita `MissingPluginException` no Windows e no Linux.
   Future<void> _setUpAndScan() async {
-    final isMobile = defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS;
-
-    if (isMobile) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
       await [
+        // `bluetoothScan` e `bluetoothConnect` sao do Android 12+; nas versoes
+        // anteriores o proprio plugin traduz para a permissao de localizacao,
+        // que era o que o Android exigia para escanear BLE.
         Permission.bluetoothScan,
         Permission.bluetoothConnect,
         Permission.locationWhenInUse,
@@ -128,15 +138,20 @@ class _ConnectScreenState extends State<ConnectScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  // Os tres blocos entram em sequencia, de cima para baixo.
+                  // Os quatro blocos entram em sequencia, de cima para baixo.
                   // O olho segue a ordem em vez de receber a tela pronta de
                   // uma vez -- e o que faz a abertura parecer calma.
                   _entrance(order: 0, child: _buildHeader()),
+                  const SizedBox(height: 24),
+                  // Antes do radar de proposito: ver os dados nao depende de
+                  // conectar, entao o atalho nao deve ficar atras do que so
+                  // serve para conectar.
+                  _entrance(order: 1, child: _buildDadosButton()),
                   const SizedBox(height: 36),
-                  _entrance(order: 1, child: Center(child: _buildRadar())),
+                  _entrance(order: 2, child: Center(child: _buildRadar())),
                   const SizedBox(height: 36),
                   Expanded(
-                    child: _entrance(order: 2, child: _buildDeviceList()),
+                    child: _entrance(order: 3, child: _buildDeviceList()),
                   ),
                 ],
               ),
@@ -206,6 +221,47 @@ class _ConnectScreenState extends State<ConnectScreen>
           style: TextStyle(fontSize: 15, color: Colors.white38),
         ),
       ],
+    );
+  }
+
+  /// Atalho para o historico guardado na nuvem.
+  ///
+  /// Fica NESTA tela, e nao na de controle, porque ver onde o robo andou ontem
+  /// nao deveria exigir estar perto dele: os dados vem da API, nao do radio.
+  /// Na tela de controle o botao so apareceria depois de conectar — que e
+  /// exatamente a condicao que ele nao tem.
+  Widget _buildDadosButton() {
+    return AppCard(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const TelemetriaScreen()),
+      ),
+      child: const Row(
+        children: [
+          IconBadge(icon: Icons.insights_rounded),
+          SizedBox(width: AppSpacing.medium),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Dados do robo',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Trajeto, bateria e historico — funciona sem conectar',
+                  style: TextStyle(color: Colors.white38, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: Colors.white24),
+        ],
+      ),
     );
   }
 

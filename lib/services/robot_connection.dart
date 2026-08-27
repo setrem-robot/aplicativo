@@ -50,6 +50,14 @@ class RobotConnection extends ChangeNotifier {
   RobotCommand _lastCommand = RobotCommand.stop;
   RobotCommand get lastCommand => _lastCommand;
 
+  /// Repete o comando de movimento enquanto o dedo estiver no botao. Ver
+  /// [send] para o porque.
+  Timer? _repeater;
+
+  /// De quanto em quanto tempo repetir. O lado do robo para os motores depois
+  /// de 1 s sem noticias, entao isto da margem para tres repeticoes perdidas.
+  static const _repeatInterval = Duration(milliseconds: 300);
+
   /// `null` = sem erro.
   String? _lastError;
   String? get lastError => _lastError;
@@ -143,23 +151,59 @@ class RobotConnection extends ChangeNotifier {
     }
   }
 
+  /// Manda o comando e, se for movimento, continua mandando ate parar.
+  ///
+  /// A repeticao nao e capricho: o app manda o comando quando o dedo desce e
+  /// `stop` quando o dedo sobe, e entre os dois nao passa nada. Se a conexao
+  /// morrer justamente nesse intervalo -- o celular saiu de alcance, ficou sem
+  /// bateria, o app foi fechado --, o `stop` nunca chega e o robo fica andando
+  /// sozinho. Repetindo, o silencio passa a significar "pare": o servico de
+  /// motores no Raspberry Pi para os motores quando fica 1 s sem receber nada
+  /// (ver `motores/vigia.py` no repositorio do orquestrador).
+  ///
   /// Payload `{"cmd":"F"}\n` -- o firmware do ESP32 espera exatamente esse
   /// formato; mudou aqui, muda la tambem.
   Future<void> send(RobotCommand command) async {
+    _repeater?.cancel();
+    _repeater = null;
+
+    final enviou = await _write(command);
+    if (!enviou) return;
+
+    _lastCommand = command;
+    notifyListeners();
+
+    if (command != RobotCommand.stop) {
+      _repeater = Timer.periodic(_repeatInterval, (_) => _write(command));
+    }
+  }
+
+  /// Escreve na caracteristica. Devolve false se nao deu.
+  ///
+  /// `withoutResponse` porque comando de direcao e sempre substituivel: o
+  /// proximo ja esta a caminho, e esperar a confirmacao de cada um so
+  /// adicionaria atraso entre o dedo e a roda.
+  Future<bool> _write(RobotCommand command) async {
     final characteristic = _rxCharacteristic;
-    if (characteristic == null || !isConnected) return;
+    if (characteristic == null || !isConnected) return false;
 
     try {
       final payload = '{"cmd":"${command.code}"}\n';
       await characteristic.write(utf8.encode(payload), withoutResponse: true);
-      _lastCommand = command;
-      notifyListeners();
+      return true;
     } catch (e) {
       _handleDrop('Nao foi possivel enviar o comando.');
+      return false;
     }
   }
 
+  void _stopRepeating() {
+    _repeater?.cancel();
+    _repeater = null;
+  }
+
   Future<void> disconnect() async {
+    _stopRepeating();
     await _notifySub?.cancel();
     _notifySub = null;
     await _connectionSub?.cancel();
@@ -183,6 +227,9 @@ class RobotConnection extends ChangeNotifier {
 
   void _handleDrop(String reason) {
     if (_status == ConnectionStatus.disconnected) return;
+    // Sem isto o timer continuaria acordando para escrever numa caracteristica
+    // que nao existe mais, uma vez a cada 300 ms, para sempre.
+    _stopRepeating();
     _lastError = reason;
     _status = ConnectionStatus.disconnected;
     _notifySub?.cancel();

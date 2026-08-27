@@ -13,7 +13,7 @@ publish_to: 'none'
 # O numero antes do "+" e a versao que aparece para o usuario (1.0.0).
 # O numero depois do "+" e o codigo interno da build: o Android exige que ele
 # AUMENTE a cada atualizacao publicada, senao recusa a instalacao por cima.
-version: 1.0.1+2
+version: 1.1.4+6
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -32,6 +32,29 @@ dependencies:
   permission_handler: ^11.0.1
 
   cupertino_icons: ^1.0.6
+
+  # --- Telemetria: ler do banco o que o robo gravou ---------------------------
+  # O app deixou de so mandar comandos: ele tambem mostra o historico que a VM
+  # do LARCC guarda (mapa do trajeto, bateria, eventos). Quem fala HTTP e so o
+  # `services/telemetry_api.dart` — a mesma regra que vale para o Bluetooth.
+
+  # Cliente HTTP oficial do time do Dart. Suficiente para GETs com cabecalho;
+  # `dio` traria interceptadores e cache que este app nao usa.
+  http: ^1.2.0
+
+  # Mapa com OpenStreetMap. Escolhido em vez do `google_maps_flutter` porque
+  # nao exige chave de API nem conta de faturamento — um projeto de curso nao
+  # deve depender de um cartao de credito para abrir uma tela.
+  flutter_map: ^8.1.0
+  latlong2: ^0.9.1
+
+  # Graficos. `fl_chart` desenha em Canvas puro, sem plugin nativo, entao
+  # funciona igual em Android, iOS e no `flutter run -d linux` usado para testar
+  # aqui sem celular.
+  fl_chart: ^1.0.0
+
+  # Guarda o endereco e o token da API entre aberturas do app.
+  shared_preferences: ^2.3.0
 
 dev_dependencies:
   # Ferramenta de teste (`flutter test`). Nao vai dentro do APK.
