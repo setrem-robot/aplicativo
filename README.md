@@ -1,19 +1,39 @@
 # Atlas Controller
 
-App Android/iOS (feito em Flutter) que controla um robô com ESP32 por
-Bluetooth Low Energy (BLE). Você escaneia e conecta no robô direto (sem
-pareamento prévio) e usa uma cruz direcional na tela para mandar ele andar.
+App Android/iOS (feito em Flutter) que faz duas coisas com a **Atlas**, o robô
+do curso de Engenharia de Computação da SETREM:
+
+- **Dirigir**, por Bluetooth Low Energy — você escaneia, conecta direto (sem
+  pareamento prévio) e usa uma cruz direcional na tela.
+- **Ver os dados**, por HTTPS — bateria, posição no mapa, gráficos de histórico
+  e os eventos crus, lidos da API de telemetria.
+
+Os dois caminhos são independentes de propósito: dá para ver a telemetria de
+casa, longe do robô, e dá para dirigir sem internet nenhuma.
 
 | | |
 |---|---|
 | **Plataforma alvo** | Android e iOS |
 | **Flutter** | 3.47.0 (canal stable) |
-| **Comunicação** | BLE (GATT), serviço no padrão Nordic UART Service (NUS) |
+| **Dirigir** | BLE (GATT), serviço no padrão Nordic UART Service (NUS) |
+| **Ver os dados** | HTTPS, com token `Bearer` |
 
-> Até uma versão anterior deste app, a comunicação era por Bluetooth Classic
-> (SPP) — o que só funcionava no Android. A migração para BLE foi feita
-> justamente para permitir rodar no iOS; veja `robot_connection.dart` e o
-> firmware em `esp32_ble_bridge.ino` no repositório `orquestrador`.
+**Chegou agora?** A Atlas é maior que este repositório. São três:
+
+| Repositório | O que é | O que faz |
+|---|---|---|
+| [**aplicativo**](https://github.com/setrem-robot/aplicativo) *(este)* | o controle | dirigir o robô e ver os dados |
+| [**orquestrador**](https://github.com/setrem-robot/orquestrador) | o corpo | motores, GPS, Wi-Fi, telemetria e a nuvem |
+| [**atlas_ai_v2**](https://github.com/setrem-robot/atlas_ai_v2) | a cara | face animada, voz, IA e a ponte Bluetooth |
+
+> **Do outro lado do BLE não há mais um ESP32.** Quem anuncia o serviço hoje é o
+> próprio Raspberry Pi, em `src/roboteye/ble/` no repositório da cara — o Pi 5
+> tem Bluetooth próprio, e a placa extra deixou de fazer sentido. Para o app não
+> mudou nada: os UUIDs e o formato da mensagem (`{"cmd":"F"}\n`) são os mesmos,
+> e o firmware do ESP32 continua funcionando como reserva.
+>
+> Antes disso a comunicação era Bluetooth Classic (SPP), que só existe no
+> Android. A migração para BLE foi o que permitiu rodar no iOS.
 
 ---
 
