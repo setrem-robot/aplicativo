@@ -7,8 +7,10 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../app/theme.dart';
 import '../services/robot_connection.dart';
+import '../widgets/app_card.dart';
 import '../widgets/device_tile.dart';
 import 'control_screen.dart';
+import 'telemetria_screen.dart';
 
 /// PRIMEIRA TELA DO APP: escaneia por robos anunciando o servico BLE do
 /// Atlas e, ao conectar, abre a [ControlScreen].
@@ -135,7 +137,9 @@ class _ConnectScreenState extends State<ConnectScreen>
             children: [
               const SizedBox(height: 20),
               _buildHeader(),
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
+              _buildDadosButton(),
+              const SizedBox(height: 24),
               _buildPulsingIcon(),
               const SizedBox(height: 40),
               Expanded(child: _buildDeviceList()),
@@ -174,6 +178,47 @@ class _ConnectScreenState extends State<ConnectScreen>
           style: TextStyle(fontSize: 15, color: Colors.white38),
         ),
       ],
+    );
+  }
+
+  /// Atalho para o historico guardado na nuvem.
+  ///
+  /// Fica NESTA tela, e nao na de controle, porque ver onde o robo andou ontem
+  /// nao deveria exigir estar perto dele: os dados vem da API, nao do radio.
+  /// Na tela de controle o botao so apareceria depois de conectar — que e
+  /// exatamente a condicao que ele nao tem.
+  Widget _buildDadosButton() {
+    return AppCard(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const TelemetriaScreen()),
+      ),
+      child: const Row(
+        children: [
+          IconBadge(icon: Icons.insights_rounded),
+          SizedBox(width: AppSpacing.medium),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Dados do robo',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Trajeto, bateria e historico — funciona sem conectar',
+                  style: TextStyle(color: Colors.white38, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: Colors.white24),
+        ],
+      ),
     );
   }
 
