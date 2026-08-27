@@ -1,0 +1,20 @@
+# Atualização automática de dependências, com aviso de vulnerabilidade.
+#
+# Abre um PR quando um pacote do pub.dev ganha versão nova — e, o que mais
+# importa, quando um em uso tem falha de segurança conhecida.
+version: 2
+updates:
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "deps"
