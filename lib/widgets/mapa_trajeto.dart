@@ -230,25 +230,42 @@ class _Resumo extends StatelessWidget {
     final ultimo = pontos.last;
     final distancia = _distanciaTotalMetros(pontos);
 
+    // A distância é o número que interessa aqui — é ela que responde "quanto
+    // ele andou". Vai grande; a contagem de pontos e a hora ficam de apoio.
+    final metros = distancia >= 1000
+        ? (distancia / 1000).toStringAsFixed(2)
+        : distancia.round().toString();
+    final unidade = distancia >= 1000 ? 'km' : 'm';
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(13, 9, 14, 10),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white12),
+        // Mais opaco que antes: sobre o mapa claro da OSM, 92% deixava as ruas
+        // passarem por baixo do texto e tirava a legibilidade justamente do
+        // número que o cartão existe para mostrar.
+        color: AppColors.background.withValues(alpha: 0.86),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            '${pontos.length} pontos · ${_distanciaEmTexto(distancia)}',
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+          const Text('PERCURSO', style: AppText.sobrancelha),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(metros, style: AppText.valor.copyWith(fontSize: 26)),
+              const SizedBox(width: 3),
+              Text(unidade, style: AppText.unidade.copyWith(fontSize: 13)),
+            ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
-            'último às ${_hora(ultimo.instante)}',
-            style: const TextStyle(color: Colors.white54, fontSize: 11),
+            '${pontos.length} pontos · último às ${_hora(ultimo.instante)}',
+            style: AppText.meta,
           ),
         ],
       ),
@@ -258,9 +275,6 @@ class _Resumo extends StatelessWidget {
 
 String _hora(DateTime momento) =>
     '${momento.hour.toString().padLeft(2, '0')}:${momento.minute.toString().padLeft(2, '0')}';
-
-String _distanciaEmTexto(double metros) =>
-    metros >= 1000 ? '${(metros / 1000).toStringAsFixed(2)} km' : '${metros.round()} m';
 
 /// Soma das distâncias entre pontos consecutivos.
 ///

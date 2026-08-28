@@ -12,8 +12,27 @@ class AppColors {
   static const Color secondary = Color(0xFF24FFC2); // usado nos degradês
   static const Color background = Color(0xFF0A0E1A);
   static const Color surface = Color(0xFF131929); // fundo de cartões/botões
-  static const Color danger = Color(0xFFB71C1C);
-  static const Color success = Colors.greenAccent; // "conectado" -- estado, não marca
+
+  /// Um degrau acima de [surface], para o cartão não ser um retângulo chapado.
+  /// A diferença é pequena de propósito: o que separa o cartão do fundo é a
+  /// borda, não o preenchimento.
+  static const Color surfaceAlta = Color(0xFF192034);
+
+  static const Color danger = Color(0xFFFF5A6E);
+  static const Color success = Color(0xFF3BE08A); // "conectado" -- estado, não marca
+  static const Color atencao = Color(0xFFFFB84D);
+
+  /// A cor do dado velho. Um cinza-ardósia frio, e não um branco fraco: o que
+  /// envelheceu tem de **recuar** da tela, não só clarear. É a única cor da
+  /// paleta que não pertence à marca, e é por isso que ela funciona aqui — um
+  /// número parado não deveria parecer da Atlas.
+  static const Color parado = Color(0xFF5A6478);
+
+  /// Texto, em três pesos de presença. Ter nomes em vez de `Colors.white54`
+  /// solto é o que impede a tela de ganhar um quarto tom por descuido.
+  static const Color texto = Color(0xFFEAF0F5);
+  static const Color textoFraco = Color(0xFF9AA6B8);
+  static const Color textoApagado = Color(0xFF5F6B80);
 
   /// Pontas claras o bastante para o fundo preto; texto em cima precisa ser
   /// escuro (veja [onBrand]).
@@ -23,6 +42,61 @@ class AppColors {
 
   /// Cor do texto sobre o [brandGradient] — branco teria contraste de 1,3:1 ali.
   static const Color onBrand = background;
+}
+
+/// A escala de texto do app, com um papel por estilo.
+///
+/// Sem fonte nova de propósito: o peso, o tamanho e o espaçamento entre letras
+/// já dão a personalidade, e um arquivo de fonte pesaria em cada atualização
+/// pelo ar. O que faz a tela parecer instrumento — e não formulário — é a
+/// disciplina de sempre usar o mesmo estilo para o mesmo papel.
+class AppText {
+  const AppText._();
+
+  /// O rótulo miúdo acima de um valor: BATERIA, POSIÇÃO. Em caixa alta e bem
+  /// espaçado, ele vira uma etiqueta de painel, e some do caminho do número.
+  static const TextStyle sobrancelha = TextStyle(
+    color: AppColors.textoFraco,
+    fontSize: 11,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 1.4,
+  );
+
+  /// O número grande. `tabularFigures` é o detalhe que importa: sem ele, cada
+  /// dígito tem largura própria e o valor **dança** a cada atualização.
+  static const TextStyle valor = TextStyle(
+    color: AppColors.texto,
+    fontSize: 40,
+    fontWeight: FontWeight.w700,
+    height: 1,
+    letterSpacing: -1.2,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+
+  /// Um valor menor, para quando há dois no mesmo cartão.
+  static const TextStyle valorMedio = TextStyle(
+    color: AppColors.texto,
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    height: 1.1,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+
+  /// A unidade ao lado do número (%, V, km/h). Nunca do tamanho do número:
+  /// quem lê o painel quer o valor, e a unidade ele já sabe.
+  static const TextStyle unidade = TextStyle(
+    color: AppColors.textoFraco,
+    fontSize: 15,
+    fontWeight: FontWeight.w500,
+  );
+
+  /// Nota de rodapé de um cartão: a idade do dado, o IP, a contagem.
+  static const TextStyle meta = TextStyle(
+    color: AppColors.textoApagado,
+    fontSize: 11.5,
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0.2,
+  );
 }
 
 /// Duracoes das animacoes. Centralizadas para o app inteiro pulsar no mesmo

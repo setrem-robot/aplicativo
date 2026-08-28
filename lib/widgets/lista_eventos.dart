@@ -42,11 +42,11 @@ class _Linha extends StatelessWidget {
         _resumir(evento),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(color: Colors.white, fontSize: 13),
+        style: const TextStyle(color: AppColors.texto, fontSize: 13),
       ),
       subtitle: Text(
         _instanteCompleto(evento.instante),
-        style: const TextStyle(color: Colors.white38, fontSize: 11),
+        style: const TextStyle(color: AppColors.textoApagado, fontSize: 11),
       ),
       onTap: () => _mostrarCru(context, evento),
       onLongPress: () {
@@ -121,7 +121,7 @@ void _mostrarCru(BuildContext context, EventoTelemetria evento) {
           const SizedBox(height: AppSpacing.small),
           Text(
             _instanteCompleto(evento.instante),
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+            style: const TextStyle(color: AppColors.textoApagado, fontSize: 12),
           ),
           const SizedBox(height: AppSpacing.medium),
           // Rolável: um payload longo não pode empurrar o botão de copiar para
@@ -131,7 +131,7 @@ void _mostrarCru(BuildContext context, EventoTelemetria evento) {
               child: SelectableText(
                 _json(evento),
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.texto,
                   fontFamily: 'monospace',
                   fontSize: 12,
                   height: 1.4,
@@ -162,7 +162,7 @@ class _Etiqueta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cor = _cores[tipo] ?? Colors.white38;
+    final cor = _cores[tipo] ?? AppColors.textoApagado;
     return Container(
       width: 62,
       padding: const EdgeInsets.symmetric(vertical: 3),

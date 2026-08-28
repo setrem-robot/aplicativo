@@ -76,24 +76,17 @@ class _TelemetriaScreenState extends State<TelemetriaScreen> {
         appBar: AppBar(
           title: const Text('Dados do robô'),
           backgroundColor: AppColors.background,
-          // A engrenagem vai para a ESQUERDA, junto do voltar: o canto direito
-          // fica livre para o selo de versão, que é global e mora ali.
-          leading: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const BackButton(),
-              IconButton(
-                icon: const Icon(Icons.settings_rounded),
-                tooltip: 'Conexão com os dados',
-                onPressed: _abrirAjustes,
-              ),
-            ],
-          ),
-          leadingWidth: 96,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings_rounded),
+              tooltip: 'Conexão com os dados',
+              onPressed: _abrirAjustes,
+            ),
+          ],
           bottom: const TabBar(
             indicatorColor: AppColors.primary,
             labelColor: AppColors.primary,
-            unselectedLabelColor: Colors.white38,
+            unselectedLabelColor: AppColors.textoApagado,
             // Rolável porque quatro rótulos com texto não cabem lado a lado
             // num celular estreito — sem isto, o Flutter os espreme até virarem
             // reticências.

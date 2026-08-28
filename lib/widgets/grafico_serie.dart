@@ -124,7 +124,7 @@ class _GraficoSerieState extends State<GraficoSerie> {
                         padding: const EdgeInsets.only(right: 6),
                         child: Text(
                           valor.toStringAsFixed(0),
-                          style: const TextStyle(color: Colors.white38, fontSize: 10),
+                          style: const TextStyle(color: AppColors.textoApagado, fontSize: 10),
                           textAlign: TextAlign.right,
                         ),
                       ),
@@ -141,7 +141,7 @@ class _GraficoSerieState extends State<GraficoSerie> {
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
                           _hora(DateTime.fromMillisecondsSinceEpoch(valor.toInt())),
-                          style: const TextStyle(color: Colors.white38, fontSize: 10),
+                          style: const TextStyle(color: AppColors.textoApagado, fontSize: 10),
                         ),
                       ),
                     ),
@@ -216,23 +216,11 @@ class _Leitura extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
         children: [
-          Text(
-            ponto.valor.toStringAsFixed(1),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 34,
-              fontWeight: FontWeight.w700,
-              height: 1,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
-          ),
+          Text(ponto.valor.toStringAsFixed(1), style: AppText.valor),
           const SizedBox(width: 4),
           Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              unidade,
-              style: const TextStyle(color: Colors.white54, fontSize: 16),
-            ),
+            padding: const EdgeInsets.only(bottom: 3),
+            child: Text(unidade, style: AppText.unidade),
           ),
           const Spacer(),
           Column(
@@ -240,13 +228,13 @@ class _Leitura extends StatelessWidget {
             children: [
               Text(
                 acompanhando ? 'no ponto tocado' : 'mais recente',
-                style: const TextStyle(color: Colors.white38, fontSize: 11),
+                style: const TextStyle(color: AppColors.textoApagado, fontSize: 11),
               ),
               const SizedBox(height: 2),
               Text(
                 _hora(ponto.instante),
                 style: TextStyle(
-                  color: acompanhando ? AppColors.secondary : Colors.white70,
+                  color: acompanhando ? AppColors.secondary : AppColors.textoFraco,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   fontFeatures: const [FontFeature.tabularFigures()],

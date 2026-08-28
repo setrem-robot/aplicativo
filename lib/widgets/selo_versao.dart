@@ -3,14 +3,20 @@ import 'package:flutter/material.dart';
 import '../app/theme.dart';
 import '../app/versao.dart';
 
-/// Um selo pequeno de versão, no canto superior direito, em todas as telas.
+/// A versão do build, à vista mas fora do caminho.
 ///
 /// Fica sobre o app inteiro (montado uma vez no `MaterialApp.builder`), então
 /// nenhuma tela precisa saber que ele existe — some no dia em que o build
 /// deixar de ser `dev` mexendo num arquivo só.
 ///
-/// `IgnorePointer` porque ele não é botão: se ficasse capturando toque, comeria
-/// o clique de qualquer coisa que passasse embaixo dele no canto da tela.
+/// **É um carimbo, não um aviso.** A primeira versão disto era uma cápsula com
+/// fundo, borda e a cor da marca: três recursos que a interface usa para dizer
+/// "olhe aqui", gastos numa informação que ninguém precisa ler duas vezes. Ela
+/// competia com o conteúdo e sujava o canto de toda tela. Agora é só texto
+/// miúdo e apagado — presente para quem procura, invisível para quem não.
+///
+/// `IgnorePointer` porque não é botão: capturando toque, ele comeria o clique
+/// de qualquer coisa que passasse embaixo no canto da tela.
 class SeloVersao extends StatelessWidget {
   const SeloVersao({super.key, required this.child});
 
@@ -25,24 +31,19 @@ class SeloVersao extends StatelessWidget {
       children: [
         child,
         Positioned(
-          top: MediaQuery.of(context).padding.top + 6,
-          right: 8,
+          // Rodapé, e não topo: em cima ele disputa com a barra de título e com
+          // os botões de ação de cada tela; embaixo a faixa é sempre folgada.
+          bottom: MediaQuery.of(context).padding.bottom + 4,
+          right: 10,
           child: IgnorePointer(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppColors.background.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
-              ),
-              child: Text(
-                kVersaoCurta,
-                style: TextStyle(
-                  color: AppColors.primary.withValues(alpha: 0.9),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.3,
-                ),
+            child: Text(
+              kVersaoCurta,
+              style: const TextStyle(
+                color: AppColors.textoApagado,
+                fontSize: 9.5,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.8,
+                height: 1,
               ),
             ),
           ),

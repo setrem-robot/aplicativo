@@ -128,12 +128,12 @@ class _Erro extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_rounded, size: 48, color: Colors.white24),
+            const Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.parado),
             const SizedBox(height: AppSpacing.medium),
             Text(
               mensagem,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, height: 1.4),
+              style: const TextStyle(color: AppColors.textoFraco, height: 1.4),
             ),
             const SizedBox(height: AppSpacing.large),
             // Um erro de token não melhora tentando de novo: o botão certo
@@ -169,19 +169,19 @@ class SemDados extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.inbox_rounded, size: 48, color: Colors.white24),
+          const Icon(Icons.inbox_rounded, size: 48, color: AppColors.parado),
           const SizedBox(height: AppSpacing.medium),
           Text(
             mensagem,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white70, fontSize: 16),
+            style: const TextStyle(color: AppColors.texto, fontSize: 16),
           ),
           if (detalhe != null) ...[
             const SizedBox(height: AppSpacing.small),
             Text(
               detalhe!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white38, height: 1.4),
+              style: const TextStyle(color: AppColors.textoApagado, height: 1.4),
             ),
           ],
         ],

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
 import '../models/telemetria.dart';
-import 'app_card.dart';
+import 'frescor.dart';
 
 /// O estado do robô agora: bateria, posição, motores e rede.
 ///
@@ -10,6 +10,11 @@ import 'app_card.dart';
 /// painel que mostra "bateria 83%" com a mesma cara para um dado de agora e
 /// para um de anteontem é pior que um painel vazio: ele faz alguém confiar num
 /// robô que está desligado há dois dias.
+///
+/// Essa regra é o que dá forma ao visual daqui, e não só ao texto. Cada cartão
+/// pega a cor, o brilho e o pulso do [Frescor] da leitura dele: o que está
+/// chegando respira em verde, o que envelheceu recua para um cinza frio. Dá
+/// para ler o painel inteiro sem ler uma palavra.
 class PainelEstado extends StatefulWidget {
   const PainelEstado({super.key, required this.estado});
 
@@ -35,9 +40,8 @@ class _PainelEstadoState extends State<PainelEstado>
   @override
   Widget build(BuildContext context) {
     final estado = widget.estado;
-    // O cabeçalho é o item 0; cada cartão entra logo depois do de cima.
     final blocos = <Widget>[
-      _Resumo(estado: estado),
+      _Cabecalho(estado: estado),
       _CartaoBateria(leitura: estado.bateria),
       _CartaoPosicao(leitura: estado.gps),
       _CartaoMotores(leitura: estado.motores),
@@ -46,9 +50,15 @@ class _PainelEstadoState extends State<PainelEstado>
 
     return ListView.separated(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(AppSpacing.medium),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.medium,
+        AppSpacing.medium,
+        AppSpacing.medium,
+        // Folga no fim para o último cartão não encostar no selo de versão.
+        AppSpacing.large * 2,
+      ),
       itemCount: blocos.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.medium),
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, i) => _Entrada(
         controle: _entrada,
         ordem: i,
@@ -82,128 +92,109 @@ class _Entrada extends StatelessWidget {
     final inicio = (ordem / (total + 1)).clamp(0.0, 1.0);
     final curva = CurvedAnimation(
       parent: controle,
-      curve: Interval(inicio, 1.0, curve: Curves.easeOut),
+      curve: Interval(inicio, 1.0, curve: Curves.easeOutCubic),
     );
     return FadeTransition(
       opacity: curva,
       child: SlideTransition(
-        position: Tween(begin: const Offset(0, 0.06), end: Offset.zero)
-            .animate(curva),
+        position:
+            Tween(begin: const Offset(0, 0.07), end: Offset.zero).animate(curva),
         child: child,
       ),
     );
   }
 }
 
-/// Uma linha de resumo no topo: o robô está "ao vivo"? e há quanto tempo veio o
-/// dado mais fresco de todos. É o que responde de relance "posso confiar nisto
-/// agora?" antes de a pessoa ler cartão por cartão.
-class _Resumo extends StatelessWidget {
-  const _Resumo({required this.estado});
+// ---------------------------------------------------------------------------
+// A moldura comum
+// ---------------------------------------------------------------------------
 
-  final EstadoRobo estado;
-
-  @override
-  Widget build(BuildContext context) {
-    final leituras = [estado.bateria, estado.gps, estado.motores, estado.wifi]
-        .whereType<LeituraAtual>()
-        .toList();
-    // A leitura mais recente de todas decide o estado geral: se qualquer coisa
-    // chegou há poucos segundos, o robô está publicando.
-    final maisFresca = leituras.isEmpty
-        ? null
-        : leituras.reduce((a, b) => a.idade < b.idade ? a : b);
-    final aoVivo = maisFresca?.recente ?? false;
-    final cor = aoVivo ? AppColors.success : Colors.orange;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.medium,
-        vertical: 12,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radius),
-        border: Border.all(color: cor.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        children: [
-          // O ponto colorido: verde aceso = chegando agora, âmbar = parado.
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              color: cor,
-              shape: BoxShape.circle,
-              boxShadow: aoVivo
-                  ? [BoxShadow(color: cor.withValues(alpha: 0.6), blurRadius: 8)]
-                  : null,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.small),
-          Text(
-            aoVivo ? 'Recebendo dados' : 'Sem dados recentes',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.3,
-            ),
-          ),
-          const Spacer(),
-          if (maisFresca != null)
-            Text(
-              idadeEmTexto(maisFresca.idade),
-              style: TextStyle(color: cor, fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Cabeçalho comum: o nome do dado, e há quanto tempo ele chegou.
-class _Cabecalho extends StatelessWidget {
-  const _Cabecalho({required this.titulo, required this.icone, this.leitura});
+/// O cartão de uma leitura.
+///
+/// A borda esquerda colorida é o que amarra o painel: ela pega a cor do
+/// [Frescor], então a coluna de traços na lateral já conta, de relance, quais
+/// dados estão vivos e quais pararam — antes de qualquer número ser lido.
+class _Cartao extends StatelessWidget {
+  const _Cartao({
+    required this.titulo,
+    required this.icone,
+    required this.leitura,
+    required this.child,
+  });
 
   final String titulo;
   final IconData icone;
   final LeituraAtual? leitura;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final atual = leitura;
-    return Row(
-      children: [
-        Icon(icone, color: AppColors.primary, size: 20),
-        const SizedBox(width: AppSpacing.small),
-        Text(
-          titulo,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
+    final frescor = atual == null ? Frescor.parado : Frescor.da(atual.idade);
+
+    return AnimatedContainer(
+      duration: AppDurations.swap,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.surfaceAlta, AppColors.surface],
+        ),
+        borderRadius: BorderRadius.circular(AppSpacing.radius),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSpacing.radius),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // O traço de frescor. 3px: fino o bastante para não virar bloco
+              // de cor, largo o bastante para se ver de relance na coluna.
+              AnimatedContainer(
+                duration: AppDurations.swap,
+                width: 3,
+                color: frescor.cor.withValues(
+                  alpha: frescor == Frescor.parado ? 0.35 : 0.9,
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(icone, color: frescor.cor, size: 15),
+                          const SizedBox(width: 7),
+                          Text(titulo, style: AppText.sobrancelha),
+                          const Spacer(),
+                          if (atual != null) ...[
+                            Text(
+                              idadeEmTexto(atual.idade),
+                              style: AppText.meta.copyWith(color: frescor.cor),
+                            ),
+                            const SizedBox(width: 4),
+                            PulsoFrescor(frescor: frescor, tamanho: 6),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      // A opacidade é o que faz o dado velho recuar sem sumir.
+                      AnimatedOpacity(
+                        duration: AppDurations.swap,
+                        opacity: frescor.opacidade,
+                        child: child,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        const Spacer(),
-        if (atual != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: atual.recente
-                  ? AppColors.success.withValues(alpha: 0.15)
-                  : Colors.orange.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              idadeEmTexto(atual.idade),
-              style: TextStyle(
-                color: atual.recente ? AppColors.success : Colors.orange,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-      ],
+      ),
     );
   }
 }
@@ -228,15 +219,76 @@ class _SemLeitura extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.small),
-      child: Text(
-        oQueFalta,
-        style: const TextStyle(color: Colors.white38, height: 1.4),
-      ),
+    return Text(oQueFalta, style: AppText.meta.copyWith(height: 1.5));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// O cabeçalho
+// ---------------------------------------------------------------------------
+
+/// A resposta de uma olhada: o robô está publicando agora?
+///
+/// Vem do dado mais fresco de todos — se qualquer coisa chegou há segundos, o
+/// robô está de pé. Fica acima dos cartões porque é a pergunta que se faz antes
+/// de olhar qualquer número.
+class _Cabecalho extends StatelessWidget {
+  const _Cabecalho({required this.estado});
+
+  final EstadoRobo estado;
+
+  @override
+  Widget build(BuildContext context) {
+    final leituras = [estado.bateria, estado.gps, estado.motores, estado.wifi]
+        .whereType<LeituraAtual>()
+        .toList();
+    final maisFresca = leituras.isEmpty
+        ? null
+        : leituras.reduce((a, b) => a.idade < b.idade ? a : b);
+    final frescor =
+        maisFresca == null ? Frescor.parado : Frescor.da(maisFresca.idade);
+
+    final titulo = switch (frescor) {
+      Frescor.vivo => 'Atlas está publicando',
+      Frescor.morno => 'Sem publicar há pouco',
+      Frescor.parado => 'Atlas está em silêncio',
+    };
+    final detalhe = switch (frescor) {
+      Frescor.vivo => 'os dados abaixo são de agora',
+      Frescor.morno => 'os dados abaixo ainda valem, mas não são de agora',
+      Frescor.parado => 'os dados abaixo são o último que se soube dele',
+    };
+
+    return Row(
+      children: [
+        PulsoFrescor(frescor: frescor, tamanho: 9),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                titulo,
+                style: TextStyle(
+                  color: frescor.cor,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(detalhe, style: AppText.meta),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Os quatro cartões
+// ---------------------------------------------------------------------------
 
 class _CartaoBateria extends StatelessWidget {
   const _CartaoBateria({required this.leitura});
@@ -247,51 +299,42 @@ class _CartaoBateria extends StatelessWidget {
   Widget build(BuildContext context) {
     final atual = leitura;
     final percentual = atual?.numero('percentual');
+    final tensao = atual?.numero('tensao_v');
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Cabecalho(titulo: 'BATERIA', icone: Icons.battery_full_rounded, leitura: atual),
-          if (percentual == null)
-            const _SemLeitura(oQueFalta: 'ninguém está publicando a bateria ainda')
-          else ...[
-            const SizedBox(height: AppSpacing.medium),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
+    return _Cartao(
+      titulo: 'BATERIA',
+      icone: Icons.bolt_rounded,
+      leitura: atual,
+      child: percentual == null
+          ? const _SemLeitura(oQueFalta: 'ninguém está publicando a bateria ainda')
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  percentual.toStringAsFixed(0),
-                  style: TextStyle(
-                    color: _corDaCarga(percentual),
-                    fontSize: 44,
-                    fontWeight: FontWeight.w700,
-                    height: 1,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    ValorAnimado(
+                      valor: percentual,
+                      estilo: AppText.valor.copyWith(color: _corDaCarga(percentual)),
+                    ),
+                    const SizedBox(width: 2),
+                    const Text('%', style: AppText.unidade),
+                    const Spacer(),
+                    if (tensao != null)
+                      Text(
+                        '${tensao.toStringAsFixed(2)} V',
+                        style: AppText.valorMedio.copyWith(
+                          color: AppColors.textoFraco,
+                          fontSize: 15,
+                        ),
+                      ),
+                  ],
                 ),
-                const Text('%', style: TextStyle(color: Colors.white54, fontSize: 20)),
-                const Spacer(),
-                if (atual!.numero('tensao_v') != null)
-                  Text(
-                    '${atual.numero('tensao_v')!.toStringAsFixed(2)} V',
-                    style: const TextStyle(color: Colors.white54),
-                  ),
+                const SizedBox(height: 12),
+                _BarraCarga(percentual: percentual, cor: _corDaCarga(percentual)),
               ],
             ),
-            const SizedBox(height: AppSpacing.medium),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: (percentual / 100).clamp(0.0, 1.0),
-                minHeight: 6,
-                backgroundColor: Colors.white12,
-                valueColor: AlwaysStoppedAnimation(_corDaCarga(percentual)),
-              ),
-            ),
-          ],
-        ],
-      ),
     );
   }
 
@@ -300,8 +343,45 @@ class _CartaoBateria extends StatelessWidget {
   /// vermelho ali significa "recolha agora", não "vai desligar em breve".
   Color _corDaCarga(double percentual) {
     if (percentual >= 50) return AppColors.success;
-    if (percentual >= 20) return Colors.orange;
-    return Colors.redAccent;
+    if (percentual >= 20) return AppColors.atencao;
+    return AppColors.danger;
+  }
+}
+
+/// A barra de carga. Anima até o valor novo em vez de saltar, pelo mesmo motivo
+/// do número: mostrar a direção da mudança sem custo.
+class _BarraCarga extends StatelessWidget {
+  const _BarraCarga({required this.percentual, required this.cor});
+
+  final double percentual;
+  final Color cor;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(3),
+      child: Stack(
+        children: [
+          Container(height: 5, color: Colors.white.withValues(alpha: 0.06)),
+          TweenAnimationBuilder<double>(
+            tween: Tween(end: (percentual / 100).clamp(0.0, 1.0)),
+            duration: AppDurations.enter,
+            curve: Curves.easeOutCubic,
+            builder: (context, v, _) => FractionallySizedBox(
+              widthFactor: v,
+              child: Container(
+                height: 5,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [cor.withValues(alpha: 0.55), cor],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -317,54 +397,51 @@ class _CartaoPosicao extends StatelessWidget {
     final lon = atual?.numero('lon');
     final comSinal = atual?.dados['fix'] == true;
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Cabecalho(titulo: 'POSIÇÃO', icone: Icons.place_rounded, leitura: atual),
-          if (lat == null || lon == null)
-            const _SemLeitura(oQueFalta: 'o GPS ainda não está instalado no robô')
-          else ...[
-            const SizedBox(height: AppSpacing.medium),
-            Text(
-              '${lat.toStringAsFixed(5)}, ${lon.toStringAsFixed(5)}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontFeatures: [FontFeature.tabularFigures()],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.small),
-            Row(
+    return _Cartao(
+      titulo: 'POSIÇÃO',
+      icone: Icons.place_rounded,
+      leitura: atual,
+      child: lat == null || lon == null
+          ? const _SemLeitura(oQueFalta: 'o GPS ainda não está instalado no robô')
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  comSinal ? Icons.satellite_alt_rounded : Icons.signal_cellular_off_rounded,
-                  size: 14,
-                  color: comSinal ? AppColors.success : Colors.orange,
-                ),
-                const SizedBox(width: 6),
                 Text(
-                  comSinal
-                      ? '${atual!.dados['satelites'] ?? '?'} satélites'
-                      // Sem fix, a coordenada é a última conhecida ou zero —
-                      // e (0, 0) fica no meio do oceano.
-                      : 'sem sinal de satélite: esta posição não vale',
-                  style: TextStyle(
-                    color: comSinal ? Colors.white54 : Colors.orange,
-                    fontSize: 12,
-                  ),
+                  '${lat.toStringAsFixed(5)}, ${lon.toStringAsFixed(5)}',
+                  style: AppText.valorMedio,
                 ),
-                const Spacer(),
-                if (atual!.numero('velocidade_kmh') != null)
-                  Text(
-                    '${atual.numero('velocidade_kmh')!.toStringAsFixed(1)} km/h',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
-                  ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      comSinal
+                          ? Icons.satellite_alt_rounded
+                          : Icons.signal_cellular_off_rounded,
+                      size: 13,
+                      color: comSinal ? AppColors.textoApagado : AppColors.atencao,
+                    ),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        comSinal
+                            ? '${atual!.dados['satelites'] ?? '?'} satélites'
+                            // Sem fix, a coordenada é a última conhecida ou
+                            // zero — e (0, 0) fica no meio do oceano.
+                            : 'sem sinal de satélite: esta posição não vale',
+                        style: AppText.meta.copyWith(
+                          color: comSinal ? AppColors.textoApagado : AppColors.atencao,
+                        ),
+                      ),
+                    ),
+                    if (atual!.numero('velocidade_kmh') != null)
+                      Text(
+                        '${atual.numero('velocidade_kmh')!.toStringAsFixed(1)} km/h',
+                        style: AppText.meta,
+                      ),
+                  ],
+                ),
               ],
             ),
-          ],
-        ],
-      ),
     );
   }
 }
@@ -379,41 +456,43 @@ class _CartaoMotores extends StatelessWidget {
     final atual = leitura;
     final acao = atual?.texto('acao') ?? '';
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Cabecalho(titulo: 'MOTORES', icone: Icons.settings_rounded, leitura: atual),
-          if (acao.isEmpty)
-            const _SemLeitura(oQueFalta: 'nenhum comando de movimento registrado')
-          else ...[
-            const SizedBox(height: AppSpacing.medium),
-            Text(
-              acao.toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.medium),
-            // Os dois lados separados, e não só a velocidade: é o que mostra
-            // que o robô estava curvando, e para que lado.
-            Row(
+    return _Cartao(
+      titulo: 'MOTORES',
+      icone: Icons.settings_rounded,
+      leitura: atual,
+      child: acao.isEmpty
+          ? const _SemLeitura(oQueFalta: 'nenhum comando de movimento registrado')
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: _Lado(nome: 'esquerda', valor: atual!.numero('esquerda'))),
-                const SizedBox(width: AppSpacing.medium),
-                Expanded(child: _Lado(nome: 'direita', valor: atual.numero('direita'))),
+                Text(
+                  acao.toUpperCase(),
+                  style: AppText.valor.copyWith(fontSize: 24, letterSpacing: 1.5),
+                ),
+                const SizedBox(height: 12),
+                // Os dois lados separados, e não só a velocidade: é o que mostra
+                // que o robô estava curvando, e para que lado.
+                Row(
+                  children: [
+                    Expanded(
+                      child: _Lado(nome: 'esquerda', valor: atual!.numero('esquerda')),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _Lado(nome: 'direita', valor: atual.numero('direita')),
+                    ),
+                  ],
+                ),
               ],
             ),
-          ],
-        ],
-      ),
     );
   }
 }
 
+/// A velocidade de um lado, com uma barra que sai do centro.
+///
+/// Do centro, e não da esquerda: o valor vai de -1 a 1, e o zero é o repouso.
+/// Uma barra que crescesse da borda faria a ré parecer avanço.
 class _Lado extends StatelessWidget {
   const _Lado({required this.nome, required this.valor});
 
@@ -422,20 +501,56 @@ class _Lado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = valor ?? 0;
+    final v = (valor ?? 0).clamp(-1.0, 1.0);
+    // Ré em âmbar: um lado negativo enquanto o outro é positivo é o robô
+    // girando no lugar, e isso deve saltar aos olhos.
+    final cor = v < 0 ? AppColors.atencao : AppColors.primary;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(nome, style: const TextStyle(color: Colors.white38, fontSize: 11)),
-        const SizedBox(height: 4),
-        Text(
-          v.toStringAsFixed(2),
-          style: TextStyle(
-            // Ré em âmbar: um lado negativo enquanto o outro é positivo é o
-            // robô girando no lugar, e isso deve saltar aos olhos.
-            color: v < 0 ? Colors.orange : Colors.white,
-            fontSize: 18,
-            fontFeatures: const [FontFeature.tabularFigures()],
+        Row(
+          children: [
+            Text(nome, style: AppText.meta),
+            const Spacer(),
+            ValorAnimado(
+              valor: v,
+              casas: 2,
+              estilo: AppText.valorMedio.copyWith(fontSize: 15, color: cor),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        SizedBox(
+          height: 4,
+          child: LayoutBuilder(
+            builder: (context, caixa) {
+              final meio = caixa.maxWidth / 2;
+              return Stack(
+                children: [
+                  Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  AnimatedPositioned(
+                    duration: AppDurations.swap,
+                    curve: Curves.easeOutCubic,
+                    left: v >= 0 ? meio : meio + meio * v,
+                    width: (meio * v).abs(),
+                    child: Container(
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: cor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ],
@@ -454,37 +569,27 @@ class _CartaoRede extends StatelessWidget {
     final conectado = atual?.dados['conectado'] == true;
     final ssid = atual?.texto('ssid') ?? '';
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Cabecalho(titulo: 'REDE', icone: Icons.wifi_rounded, leitura: atual),
-          if (atual == null)
-            const _SemLeitura(oQueFalta: 'o serviço de Wi-Fi não publicou estado')
-          else ...[
-            const SizedBox(height: AppSpacing.medium),
-            Row(
+    return _Cartao(
+      titulo: 'REDE',
+      icone: conectado ? Icons.wifi_rounded : Icons.wifi_off_rounded,
+      leitura: atual,
+      child: atual == null
+          ? const _SemLeitura(oQueFalta: 'o serviço de Wi-Fi não publicou estado')
+          : Row(
               children: [
-                Icon(
-                  conectado ? Icons.wifi_rounded : Icons.wifi_off_rounded,
-                  color: conectado ? AppColors.success : Colors.redAccent,
-                ),
-                const SizedBox(width: AppSpacing.small),
-                Text(
-                  conectado ? (ssid.isEmpty ? 'conectado' : ssid) : 'fora do ar',
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                ),
-                const Spacer(),
-                if (conectado && atual.texto('ip').isNotEmpty)
-                  Text(
-                    atual.texto('ip'),
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                Expanded(
+                  child: Text(
+                    conectado ? (ssid.isEmpty ? 'conectado' : ssid) : 'fora do ar',
+                    style: AppText.valorMedio.copyWith(
+                      color: conectado ? AppColors.texto : AppColors.danger,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
+                ),
+                if (conectado && atual.texto('ip').isNotEmpty)
+                  Text(atual.texto('ip'), style: AppText.meta),
               ],
             ),
-          ],
-        ],
-      ),
     );
   }
 }
