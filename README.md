@@ -147,6 +147,27 @@ flutter build apk --release \
 > Para o APK configurado valer: **desinstalar antes de instalar**. Ou corrigir
 > à mão nos ajustes, que dá no mesmo mas exige digitar o token.
 
+### O que **não** cabe num patch do Shorebird
+
+O Shorebird entrega código Dart pelo ar, mas **não** entrega mudança de asset
+nem de código nativo. Três coisas quebram um patch, e a primeira é a que menos
+se espera:
+
+| Mudança | Por quê |
+|---|---|
+| **Usar um ícone novo do `Icons.`** | O Flutter embute só os ícones usados (*tree-shaking* da MaterialIcons). Trocar ou acrescentar um muda o arquivo da fonte, e o patch falha com `UnpatchableChangeException`. |
+| Adicionar/trocar fonte, imagem ou qualquer arquivo em `assets/` | Mesma razão. |
+| Adicionar dependência com código nativo (um plugin) | Patch não carrega `.so` novo. |
+
+Quando alguma dessas for necessária, o caminho é **subir a `version:` do
+pubspec** e cortar um release novo — que exige reinstalar o app. Por isso vale
+decidir de uma vez o conjunto de ícones de uma tela, em vez de trocá-los aos
+poucos.
+
+E, ao subir a versão, **mude junto a constante em `lib/app/versao.dart`**: ela
+existe porque ler a versão em tempo de execução exigiria um plugin nativo, que
+é justamente o que não viaja no patch.
+
 ### Ainda não há dados?
 
 O GPS ainda não está montado e ninguém publica bateria — as telas ficariam

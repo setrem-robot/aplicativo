@@ -303,7 +303,12 @@ class _CartaoBateria extends StatelessWidget {
 
     return _Cartao(
       titulo: 'BATERIA',
-      icone: Icons.bolt_rounded,
+      // NÃO troque este ícone sem cortar um release novo. O Flutter embute só
+      // os ícones que o app usa (tree-shaking da MaterialIcons), então trocar um
+      // muda o arquivo da fonte — e o Shorebird recusa entregar mudança de
+      // asset por patch: `UnpatchableChangeException`. Já custou um deploy
+      // falhado aqui, trocando este mesmo ícone por `bolt_rounded`.
+      icone: Icons.battery_full_rounded,
       leitura: atual,
       child: percentual == null
           ? const _SemLeitura(oQueFalta: 'ninguém está publicando a bateria ainda')
