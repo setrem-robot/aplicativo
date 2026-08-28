@@ -10,18 +10,17 @@
 /// este número junto**. Num patch, basta mudar aqui.
 library;
 
-const String kAppVersao = '1.1.4+6';
+const String kAppVersao = '1.2.0+7';
 
 /// Canal do build. `dev` enquanto o app está em desenvolvimento — é o que
 /// justifica o selo de versão à vista. Vira `estável` (ou some) quando for para
 /// as mãos de quem só usa.
 const String kAppCanal = 'dev';
 
-/// O rótulo montado, como aparece no selo: `dev · 1.1.4`.
+/// O que aparece no selo: só o número, e nada mais.
 ///
-/// Sem o `+build` de propósito: o número depois do `+` só interessa para
-/// instalar por cima na loja, e polui um selo que é para ser lido de relance.
-String get kVersaoCurta {
-  final semBuild = kAppVersao.split('+').first;
-  return '$kAppCanal · $semBuild';
-}
+/// Sem o canal, sem separador, sem ornamento. Duas tentativas anteriores de
+/// enfeitar isto — uma cápsula com borda, depois o canal antes do número — só
+/// atrapalharam. É uma informação que se confere de vez em quando, não algo
+/// que a tela precise anunciar.
+String get kVersaoCurta => kAppVersao;

@@ -168,6 +168,33 @@ E, ao subir a versão, **mude junto a constante em `lib/app/versao.dart`**: ela
 existe porque ler a versão em tempo de execução exigiria um plugin nativo, que
 é justamente o que não viaja no patch.
 
+### O ícone do app
+
+São **os olhos da Atlas** — a mesma caixa arredondada que o rosto desenha no
+robô (`corner_radius = 0.30`, no RobotEye), com o olho direito um pouco mais
+baixo, porque sem assimetria "a face parece duas formas idênticas coladas".
+
+Os arquivos não são editados à mão: saem de um gerador, para que mudar a cor ou
+a proporção não vire quinze PNGs recortados um a um.
+
+```bash
+# precisa de Pillow; num container, para não instalar nada na máquina:
+docker run --rm -v "$PWD/tool":/w -w /w python:3.12-slim sh -c \
+  "pip install -q Pillow && python gerar_icones.py /w/saida && python gerar_icones_ios.py /w/saida/ios"
+```
+
+O gerador escreve também um `conferencia.png`: os tamanhos reais lado a lado e o
+adaptativo já recortado em círculo e em squircle. **Olhe esse arquivo antes de
+copiar** — é ele que pega o ícone que some no tamanho de 48 px, que é onde ele
+mais aparece.
+
+Depois, copie para `android/app/src/main/res/mipmap-*/` e para
+`ios/Runner/Assets.xcassets/AppIcon.appiconset/`.
+
+> ⚠️ **Trocar o ícone exige um release novo.** Ele é recurso do Android dentro do
+> APK, não código Dart — nenhum patch do Shorebird o entrega. Suba a `version:`
+> e avise quem tem o app que precisa reinstalar.
+
 ### Ainda não há dados?
 
 O GPS ainda não está montado e ninguém publica bateria — as telas ficariam

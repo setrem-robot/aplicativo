@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AppColors.background do app (#0A0E1A): o ícone e a primeira tela
+         abrem na mesma cor, então o app não "pisca" ao ser aberto. -->
+    <color name="ic_launcher_background">#0A0E1A</color>
+</resources>

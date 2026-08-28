@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../app/theme.dart';
 import '../app/versao.dart';
 
 /// A versão do build, à vista mas fora do caminho.
@@ -39,10 +38,8 @@ class SeloVersao extends StatelessWidget {
             child: Text(
               kVersaoCurta,
               style: const TextStyle(
-                color: AppColors.textoApagado,
-                fontSize: 9.5,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.8,
+                color: Colors.white,
+                fontSize: 10,
                 height: 1,
               ),
             ),
