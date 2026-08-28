@@ -10,25 +10,153 @@ import 'app_card.dart';
 /// painel que mostra "bateria 83%" com a mesma cara para um dado de agora e
 /// para um de anteontem é pior que um painel vazio: ele faz alguém confiar num
 /// robô que está desligado há dois dias.
-class PainelEstado extends StatelessWidget {
+class PainelEstado extends StatefulWidget {
   const PainelEstado({super.key, required this.estado});
 
   final EstadoRobo estado;
 
   @override
+  State<PainelEstado> createState() => _PainelEstadoState();
+}
+
+class _PainelEstadoState extends State<PainelEstado>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entrada = AnimationController(
+    vsync: this,
+    duration: AppDurations.enter,
+  )..forward();
+
+  @override
+  void dispose() {
+    _entrada.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ListView(
+    final estado = widget.estado;
+    // O cabeçalho é o item 0; cada cartão entra logo depois do de cima.
+    final blocos = <Widget>[
+      _Resumo(estado: estado),
+      _CartaoBateria(leitura: estado.bateria),
+      _CartaoPosicao(leitura: estado.gps),
+      _CartaoMotores(leitura: estado.motores),
+      _CartaoRede(leitura: estado.wifi),
+    ];
+
+    return ListView.separated(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(AppSpacing.medium),
-      children: [
-        _CartaoBateria(leitura: estado.bateria),
-        const SizedBox(height: AppSpacing.medium),
-        _CartaoPosicao(leitura: estado.gps),
-        const SizedBox(height: AppSpacing.medium),
-        _CartaoMotores(leitura: estado.motores),
-        const SizedBox(height: AppSpacing.medium),
-        _CartaoRede(leitura: estado.wifi),
-      ],
+      itemCount: blocos.length,
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.medium),
+      itemBuilder: (context, i) => _Entrada(
+        controle: _entrada,
+        ordem: i,
+        total: blocos.length,
+        child: blocos[i],
+      ),
+    );
+  }
+}
+
+/// Faz um bloco entrar deslizando de baixo e surgindo, na sua vez.
+///
+/// A ordem é o que dá o efeito de cascata: o cartão de baixo só começa quando o
+/// de cima já está na metade. Recortar o mesmo controller em fatias (`Interval`)
+/// é mais barato que um controller por cartão e mantém todos no mesmo ritmo.
+class _Entrada extends StatelessWidget {
+  const _Entrada({
+    required this.controle,
+    required this.ordem,
+    required this.total,
+    required this.child,
+  });
+
+  final AnimationController controle;
+  final int ordem;
+  final int total;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final inicio = (ordem / (total + 1)).clamp(0.0, 1.0);
+    final curva = CurvedAnimation(
+      parent: controle,
+      curve: Interval(inicio, 1.0, curve: Curves.easeOut),
+    );
+    return FadeTransition(
+      opacity: curva,
+      child: SlideTransition(
+        position: Tween(begin: const Offset(0, 0.06), end: Offset.zero)
+            .animate(curva),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Uma linha de resumo no topo: o robô está "ao vivo"? e há quanto tempo veio o
+/// dado mais fresco de todos. É o que responde de relance "posso confiar nisto
+/// agora?" antes de a pessoa ler cartão por cartão.
+class _Resumo extends StatelessWidget {
+  const _Resumo({required this.estado});
+
+  final EstadoRobo estado;
+
+  @override
+  Widget build(BuildContext context) {
+    final leituras = [estado.bateria, estado.gps, estado.motores, estado.wifi]
+        .whereType<LeituraAtual>()
+        .toList();
+    // A leitura mais recente de todas decide o estado geral: se qualquer coisa
+    // chegou há poucos segundos, o robô está publicando.
+    final maisFresca = leituras.isEmpty
+        ? null
+        : leituras.reduce((a, b) => a.idade < b.idade ? a : b);
+    final aoVivo = maisFresca?.recente ?? false;
+    final cor = aoVivo ? AppColors.success : Colors.orange;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.medium,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.radius),
+        border: Border.all(color: cor.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          // O ponto colorido: verde aceso = chegando agora, âmbar = parado.
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: cor,
+              shape: BoxShape.circle,
+              boxShadow: aoVivo
+                  ? [BoxShadow(color: cor.withValues(alpha: 0.6), blurRadius: 8)]
+                  : null,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.small),
+          Text(
+            aoVivo ? 'Recebendo dados' : 'Sem dados recentes',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const Spacer(),
+          if (maisFresca != null)
+            Text(
+              idadeEmTexto(maisFresca.idade),
+              style: TextStyle(color: cor, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+        ],
+      ),
     );
   }
 }
