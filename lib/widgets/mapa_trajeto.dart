@@ -79,9 +79,11 @@ class _MapaTrajetoState extends State<MapaTrajeto> {
                   ),
                 Marker(
                   point: ultimo,
-                  width: 34,
-                  height: 34,
-                  child: const _Pino(cor: AppColors.primary, icone: Icons.smart_toy_rounded),
+                  // Maior que o pino para caber o anel do farol pulsando à
+                  // volta — senão o anel seria recortado na borda do marcador.
+                  width: 56,
+                  height: 56,
+                  child: const _Farol(),
                 ),
               ],
             ),
@@ -141,6 +143,60 @@ class _MapaTrajetoState extends State<MapaTrajeto> {
         // borda do trajeto.
         padding: const EdgeInsets.all(48),
       ),
+    );
+  }
+}
+
+/// O robô na sua última posição, como um farol: o pino fixo no centro e um anel
+/// que cresce e some, repetindo. Puxa o olho para "onde ele está agora" sem
+/// precisar de legenda — é o único ponto do mapa que se move.
+class _Farol extends StatefulWidget {
+  const _Farol();
+
+  @override
+  State<_Farol> createState() => _FarolState();
+}
+
+class _FarolState extends State<_Farol> with SingleTickerProviderStateMixin {
+  late final AnimationController _controle = AnimationController(
+    vsync: this,
+    // Lento de propósito: um pulso rápido vira estroboscópio numa tela que
+    // fica minutos aberta. Este é o mesmo ritmo do radar da tela de conexão.
+    duration: const Duration(milliseconds: 2200),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controle.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controle,
+      builder: (context, child) {
+        final t = _controle.value;
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // O anel: cresce de 40% a 100% do quadro e desvanece nesse caminho.
+            Container(
+              width: 56 * (0.4 + 0.6 * t),
+              height: 56 * (0.4 + 0.6 * t),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: (1 - t) * 0.6),
+                  width: 2,
+                ),
+              ),
+            ),
+            child!,
+          ],
+        );
+      },
+      child: const _Pino(cor: AppColors.primary, icone: Icons.smart_toy_rounded),
     );
   }
 }
