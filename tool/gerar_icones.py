@@ -4,9 +4,10 @@ A forma não é inventada — é a do rosto que roda no robô: uma caixa arredon
 (ver `corner_radius = 0.30` em `config.py` no RobotEye). Quem já viu a Atlas
 ligada reconhece o ícone sem ler o nome.
 
-O olho direito é ~7% mais baixo que o esquerdo, e isso também vem do rosto real:
-o README do RobotEye diz que, sem assimetria, "a face parece duas formas
-idênticas coladas".
+Os dois olhos são idênticos. O rosto que roda no robô baixa o olho direito ~7%,
+e o ícone imitava isso — mas num ícone de 48 px a diferença não lê como a
+assimetria viva do rosto, lê como desalinhamento. Lá o robô pisca e se mexe, e a
+assimetria some no movimento; aqui a forma fica parada.
 
 Duas decisões que vieram de olhar o resultado, e não da teoria:
 
@@ -44,26 +45,25 @@ def olhos(tam, escala=1.0):
     """Os dois olhos num quadro transparente. `escala` encolhe o par."""
     T = tam * SS
     larg = 0.305 * T * escala
-    alt_e = 0.450 * T * escala
-    alt_d = alt_e * 0.93           # o olho direito, mais baixo
+    alt = 0.450 * T * escala
     vao = 0.080 * T * escala
     raio = larg * 0.34             # caixa arredondada, não cápsula
 
     total = larg * 2 + vao
     x0 = (T - total) / 2
     cy = T / 2
-    topo = cy - alt_e / 2
+    topo = cy - alt / 2
 
     mascara = Image.new("L", (T, T), 0)
     md = ImageDraw.Draw(mascara)
-    for i, alt in enumerate((alt_e, alt_d)):
+    for i in range(2):
         ex = x0 + i * (larg + vao)
         md.rounded_rectangle(
-            [ex, cy - alt / 2, ex + larg, cy + alt / 2], radius=raio, fill=255
+            [ex, topo, ex + larg, topo + alt], radius=raio, fill=255
         )
 
     quadro = Image.new("RGBA", (T, T), (0, 0, 0, 0))
-    quadro.paste(_degrade(T, x0, topo, x0 + total, topo + alt_e), (0, 0), mascara)
+    quadro.paste(_degrade(T, x0, topo, x0 + total, topo + alt), (0, 0), mascara)
     return quadro.resize((tam, tam), Image.LANCZOS)
 
 
@@ -150,3 +150,11 @@ if __name__ == "__main__":
         x += 84
     folha.save(os.path.join(saida, "conferencia.png"))
     print("  conferência: conferencia.png")
+
+    # --- o ícone em tamanho de cartaz --------------------------------------
+    # Nada aqui usa: é para slide, capa de repositório e impressão. Duas
+    # versões porque as duas fazem falta — sobre fundo claro o quadro escuro
+    # do ícone é o que se quer, e sobre o fundo escuro do slide só os olhos.
+    legado(1024).save(os.path.join(saida, "atlas-icone-1024.png"))
+    olhos(1024).save(os.path.join(saida, "atlas-olhos-1024.png"))
+    print("  cartaz: atlas-icone-1024.png, atlas-olhos-1024.png")

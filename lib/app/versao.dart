@@ -10,7 +10,7 @@
 /// este número junto**. Num patch, basta mudar aqui.
 library;
 
-const String kAppVersao = '1.2.0+7';
+const String kAppVersao = '1.2.1+8';
 
 /// Canal do build. `dev` enquanto o app está em desenvolvimento — é o que
 /// justifica o selo de versão à vista. Vira `estável` (ou some) quando for para

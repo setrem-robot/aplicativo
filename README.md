@@ -171,8 +171,11 @@ existe porque ler a versão em tempo de execução exigiria um plugin nativo, qu
 ### O ícone do app
 
 São **os olhos da Atlas** — a mesma caixa arredondada que o rosto desenha no
-robô (`corner_radius = 0.30`, no RobotEye), com o olho direito um pouco mais
-baixo, porque sem assimetria "a face parece duas formas idênticas coladas".
+robô (`corner_radius = 0.30`, no RobotEye), no degradê menta-verde da marca.
+
+Os dois olhos são iguais. O rosto no robô baixa o olho direito ~7%, e o ícone
+copiou isso a princípio; mas lá a face pisca e se mexe, e a assimetria some no
+movimento. Parada, e no tamanho de um ícone, ela só lê como desalinhamento.
 
 Os arquivos não são editados à mão: saem de um gerador, para que mudar a cor ou
 a proporção não vire quinze PNGs recortados um a um.
@@ -190,6 +193,11 @@ mais aparece.
 
 Depois, copie para `android/app/src/main/res/mipmap-*/` e para
 `ios/Runner/Assets.xcassets/AppIcon.appiconset/`.
+
+Saem junto dois PNGs de 1024 px que o app não usa — `atlas-icone-1024.png`, com
+o quadro escuro, e `atlas-olhos-1024.png`, só os olhos em fundo transparente.
+São para slide, capa e impressão, e existem para que ninguém precise ampliar um
+mipmap de 192 px quando o ícone for parar num cartaz.
 
 > ⚠️ **Trocar o ícone exige um release novo.** Ele é recurso do Android dentro do
 > APK, não código Dart — nenhum patch do Shorebird o entrega. Suba a `version:`

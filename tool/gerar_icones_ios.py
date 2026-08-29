@@ -7,12 +7,13 @@ na validação da App Store, tarde demais.
 import os, sys
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gerar import olhos, FUNDO, SS  # noqa: E402
+from gerar_icones import olhos, FUNDO  # noqa: E402
 
 
 def ios(tam):
     quadro = Image.new("RGB", (tam, tam), FUNDO[:3])
-    quadro.paste(olhos(tam, escala=0.92), (0, 0), olhos(tam, escala=0.92))
+    par = olhos(tam, escala=0.92)
+    quadro.paste(par, (0, 0), par)
     return quadro
 
 
