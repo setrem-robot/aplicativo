@@ -20,19 +20,23 @@ lib/
 │
 ├── models/
 │   ├── robot_command.dart       ③ os comandos que o robô entende
-│   └── telemetria.dart          ⑧ o que a API devolve, em objetos
+│   ├── telemetria.dart          ⑧ o que a API devolve, em objetos
+│   └── rota_segura.dart         ⑭ a rota segura: waypoints + cerca
 │
 ├── services/
 │   ├── robot_connection.dart    ④ o Bluetooth — o cérebro do app
-│   └── telemetry_api.dart       ⑨ o HTTP — a outra metade dos dados
+│   ├── telemetry_api.dart       ⑨ o HTTP — a outra metade dos dados
+│   └── rota_store.dart          ⑭ guarda a rota entre aberturas
 │
 ├── screens/
 │   ├── connect_screen.dart      ⑤ tela 1: escolher o robô
 │   ├── control_screen.dart      ⑥ tela 2: dirigir o robô
 │   ├── telemetria_screen.dart   ⑩ tela 3: o que o robô fez (quatro abas)
-│   └── ajustes_api_screen.dart  ⑪ onde ficam os dados
+│   ├── ajustes_api_screen.dart  ⑪ onde ficam os dados
+│   └── rota_segura_screen.dart  ⑭ desenhar a rota sobre o mapa
 │
 └── widgets/
+    ├── camada_osm.dart          ⑭ o mapa OSM (tiles + atribuição)
     ├── app_card.dart            ⑦ peças visuais reaproveitadas
     ├── device_tile.dart
     ├── direction_pad.dart
@@ -248,6 +252,35 @@ Ele também separa **"deu erro"** de **"deu certo e não havia nada"**. São
 problemas com soluções opostas, e com a mesma cara na tela ninguém sabe se
 procura o defeito na API ou espera o robô ser ligado.
 
+### ⑭ A rota segura — planejar por onde o robô pode andar
+
+Uma rota é uma lista de waypoints presa dentro de uma **cerca**: um círculo em
+volta do ponto de partida. O primeiro toque no mapa fixa a partida (o centro da
+cerca) e os pontos seguintes só entram se couberem dentro do raio. É daí que vem
+o "segura": não dá para, sem querer, desenhar uma rota que leva o robô para fora
+da área combinada — a validação está em `rota_segura.dart`, testada sem mapa e
+sem robô.
+
+Ela segue a mesma regra de ouro das outras duas fontes de dados. A **tela**
+(`rota_segura_screen.dart`) só desenha e decide o que é um ponto válido; quem
+**envia** é o `RobotConnection.enviarRota` (o único que fala com o rádio), e quem
+**guarda** entre aberturas é o `RotaStore` (SharedPreferences, como o endereço da
+API). O envio é **fatiado**: cada linha BLE não pode passar de 512 bytes (limite
+do firmware do ESP32), então a rota vira uma sequência `inicio` → um `ponto` por
+waypoint → `fim`, cada linha bem abaixo do teto. O contrato completo está em
+`../orquestrador/docs/contrato-mqtt.md`.
+
+O mapa da OSM (os tiles e a atribuição que a licença exige) saiu para
+`widgets/camada_osm.dart`, porque agora duas telas o usam — o trajeto da
+telemetria e esta. Era exatamente a duplicação que a seção ② descreve, só que de
+um mapa em vez de uma cor.
+
+**O que este MVP não faz:** o robô ainda é dirigido no braço; a rota é um guia
+planejado, não um piloto automático. Um serviço no Raspberry Pi que *siga* a rota
+(malha fechada de GPS) é o próximo passo, e mora do lado do `orquestrador` porque
+precisa manter os motores vivos localmente (o vigia de 1 s pararia qualquer
+navegação comandada de longe pela rede).
+
 ---
 
 ## 3. Os testes
@@ -261,6 +294,7 @@ flutter test
 | `test/robot_command_test.dart` | nenhum comando repete a letra de outro |
 | `test/direction_pad_test.dart` | apertar move, soltar para, desconectado não responde |
 | `test/telemetria_test.dart` | payload torto não derruba a tela, e a idade vem da API |
+| `test/rota_segura_test.dart` | ponto fora da cerca é recusado, e a rota fatiada cabe no limite BLE |
 
 São poucos e rápidos, e cobrem justamente as regras que, se quebrarem, fazem
 o robô se comportar mal de um jeito difícil de perceber olhando a tela.
