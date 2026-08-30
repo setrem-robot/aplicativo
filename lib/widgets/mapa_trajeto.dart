@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../app/theme.dart';
 import '../models/telemetria.dart';
+import 'camada_osm.dart';
 
 /// O percurso do robô desenhado sobre o mapa.
 ///
@@ -45,17 +46,7 @@ class _MapaTrajetoState extends State<MapaTrajeto> {
             onMapReady: () => _enquadrar(caminho),
           ),
           children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              // A política de uso do tile server da OSM exige identificar quem
-              // está pedindo. Sem isto o servidor pode recusar as imagens, e a
-              // tela fica cinza sem dizer por quê.
-              userAgentPackageName: 'br.edu.setrem.atlas.controller',
-              // O tema do app é escuro e o mapa da OSM é claro. Escurecer o
-              // tile inteiro pouparia esse contraste, mas apagaria as ruas —
-              // que é justamente o que dá sentido ao trajeto. Fica claro.
-              tileProvider: NetworkTileProvider(),
-            ),
+            camadaTilesOsm(),
             if (caminho.length > 1)
               PolylineLayer(
                 polylines: [
@@ -108,21 +99,7 @@ class _MapaTrajetoState extends State<MapaTrajeto> {
             child: const Icon(Icons.center_focus_strong_rounded),
           ),
         ),
-        // Atribuição exigida pela licença dos dados da OpenStreetMap.
-        const Positioned(
-          right: 0,
-          bottom: 0,
-          child: ColoredBox(
-            color: Colors.black54,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              child: Text(
-                '© OpenStreetMap',
-                style: TextStyle(color: Colors.white70, fontSize: 10),
-              ),
-            ),
-          ),
-        ),
+        const AtribuicaoOsm(),
       ],
     );
   }
