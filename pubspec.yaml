@@ -46,7 +46,7 @@ dependencies:
   # nao exige chave de API nem conta de faturamento — um projeto de curso nao
   # deve depender de um cartao de credito para abrir uma tela.
   flutter_map: ^8.1.0
-  latlong2: ^0.9.1
+  latlong2: ^0.10.1
 
   # Graficos. `fl_chart` desenha em Canvas puro, sem plugin nativo, entao
   # funciona igual em Android, iOS e no `flutter run -d linux` usado para testar
