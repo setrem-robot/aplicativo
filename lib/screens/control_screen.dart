@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app/theme.dart';
 import '../models/robot_command.dart';
 import '../services/robot_connection.dart';
+import 'rota_segura_screen.dart';
 import '../widgets/app_card.dart';
 import '../widgets/brand_glow.dart';
 import '../widgets/direction_pad.dart';
@@ -119,6 +120,14 @@ class _TopBar extends StatelessWidget {
             ],
           ),
         ),
+        AppCard(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const RotaSeguraScreen()),
+          ),
+          padding: const EdgeInsets.all(10),
+          child: const Icon(Icons.route_rounded, color: AppColors.primary, size: 20),
+        ),
+        const SizedBox(width: 14),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
