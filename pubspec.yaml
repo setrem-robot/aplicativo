@@ -29,7 +29,10 @@ dependencies:
   flutter_blue_plus: ^2.3.12
 
   # Pede as permissoes de Bluetooth e Localizacao ao Android.
-  permission_handler: ^13.0.1
+  # Fixado em ^11: a 13.x exige compileSdk 37 (Android canario) para compilar o
+  # APK, e a API usada aqui (bluetoothScan/Connect, locationWhenInUse, request)
+  # e a mesma. Voltar a subir so quando o compileSdk 37 for estavel.
+  permission_handler: ^11.0.1
 
   cupertino_icons: ^1.0.6
 
