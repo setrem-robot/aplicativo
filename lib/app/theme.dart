@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Paleta oficial da Setrem (#00BF6F / Pantone 7480 C). Mude só aqui — nunca
+/// Paleta da marca (#09D085, um verde de destaque). Mude só aqui — nunca
 /// solto num `Color(0xFF...)` dentro de uma tela.
 ///
 /// Azul Setrem (#002F6C) não é usado como destaque: contraste de 1,6:1 no
@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 class AppColors {
   const AppColors._();
 
-  static const Color primary = Color(0xFF00BF6F); // destaque: ícones, bordas
+  static const Color primary = Color(0xFF09D085); // destaque: ícones, bordas
   static const Color secondary = Color(0xFF24FFC2); // usado nos degradês
   static const Color background = Color(0xFF0A0E1A);
   static const Color surface = Color(0xFF131929); // fundo de cartões/botões

@@ -21,7 +21,7 @@ from PIL import Image, ImageDraw
 
 FUNDO = (10, 14, 26, 255)      # AppColors.background #0A0E1A
 MENTA = (36, 255, 194)         # AppColors.secondary  #24FFC2
-VERDE = (0, 191, 111)          # AppColors.primary    #00BF6F
+VERDE = (9, 208, 133)          # AppColors.primary    #09D085
 SS = 4                          # supersampling: a borda em 48 px serrilharia
 
 
