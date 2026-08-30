@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../models/robot_command.dart';
+import '../models/rota_segura.dart';
 
 /// Em que ponto da conexao o app esta.
 enum ConnectionStatus { disconnected, connecting, connected }
@@ -178,23 +179,45 @@ class RobotConnection extends ChangeNotifier {
     }
   }
 
-  /// Escreve na caracteristica. Devolve false se nao deu.
+  Future<bool> _write(RobotCommand command) =>
+      _writeRaw('{"cmd":"${command.code}"}');
+
+  /// Escreve uma linha JSON crua na caracteristica. Devolve false se nao deu.
+  ///
+  /// O `\n` final e o delimitador que o ESP32 usa para saber onde uma mensagem
+  /// termina; por isso ele entra aqui, num lugar so, e nao em cada chamador.
   ///
   /// `withoutResponse` porque comando de direcao e sempre substituivel: o
   /// proximo ja esta a caminho, e esperar a confirmacao de cada um so
   /// adicionaria atraso entre o dedo e a roda.
-  Future<bool> _write(RobotCommand command) async {
+  Future<bool> _writeRaw(String linhaJson) async {
     final characteristic = _rxCharacteristic;
     if (characteristic == null || !isConnected) return false;
 
     try {
-      final payload = '{"cmd":"${command.code}"}\n';
-      await characteristic.write(utf8.encode(payload), withoutResponse: true);
+      await characteristic.write(utf8.encode('$linhaJson\n'), withoutResponse: true);
       return true;
     } catch (e) {
       _handleDrop('Nao foi possivel enviar o comando.');
       return false;
     }
+  }
+
+  /// Envia a rota segura planejada no app, fatiada em linhas que cabem no limite
+  /// BLE (ver [RotaSegura.paraMensagensBle]). Devolve false se a conexao caiu no
+  /// meio — o chamador mostra o resultado.
+  ///
+  /// Um respiro entre as linhas evita empurrar varias mensagens no mesmo pacote
+  /// e dar mais margem para o `withoutResponse` (que nao confirma entrega) sob
+  /// congestionamento do radio. Como sao poucos pontos, o custo total e de
+  /// fracao de segundo.
+  Future<bool> enviarRota(RotaSegura rota) async {
+    if (!isConnected) return false;
+    for (final linha in rota.paraMensagensBle()) {
+      if (!await _writeRaw(linha)) return false;
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+    }
+    return true;
   }
 
   void _stopRepeating() {
