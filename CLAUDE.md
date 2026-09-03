@@ -5,6 +5,17 @@ completo de arquivos e decisões de design, leia **[`ARQUITETURA.md`](./ARQUITET
 primeiro — este arquivo só cobre o que ela não cobre (contexto de ambiente e
 do projeto maior).
 
+Para o que atravessa a borda do app — os UUIDs do BLE, o formato das mensagens,
+o contrato da API —, o mapa é
+[`../orquestrador/MAPA-COMUNICACAO.md`](../orquestrador/MAPA-COMUNICACAO.md).
+
+**O robô não anda hoje, e não é culpa do app.** Conferido por SSH no Pi de
+produção: os serviços do `orquestrador` (o roteador e o `motores`) **não estão
+instalados**. O comando sai daqui, atravessa o BLE, chega em
+`robo/comando/entrada` — e para ali, porque ninguém assina esse tópico. O app
+mostra "conectado" e está certo: ele fez a parte dele. Ver a §0 do mapa antes de
+procurar defeito em `robot_connection.dart`.
+
 ## Regra de ouro do projeto (de `ARQUITETURA.md`)
 
 > As telas não sabem de onde vêm os dados. Quem busca os dados não sabe o que
