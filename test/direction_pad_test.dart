@@ -70,4 +70,64 @@ void main() {
     expect(pressed, isEmpty);
     expect(released, isEmpty);
   });
+
+  testWidgets('a cruz sumir da tela com o dedo apertado conta como soltar', (
+    tester,
+  ) async {
+    // O caso real: a tela e trocada, ou a cruz e retirada da arvore, enquanto
+    // alguem segura uma direcao. Sem o aviso de "soltou", quem repete o comando
+    // a cada 300 ms continua repetindo — com o robo andando e ninguem mais na
+    // tela para mandar parar.
+    final pressed = <RobotCommand>[];
+    final released = <void>[];
+
+    Widget montar({required bool mostrarCruz}) => MaterialApp(
+      home: Scaffold(
+        body: mostrarCruz
+            ? DirectionPad(
+                onPress: pressed.add,
+                onRelease: () => released.add(null),
+              )
+            : const SizedBox.shrink(),
+      ),
+    );
+
+    await tester.pumpWidget(montar(mostrarCruz: true));
+    await tester.startGesture(
+      tester.getCenter(find.byIcon(RobotCommand.forward.icon)),
+    );
+    await tester.pump();
+    expect(pressed, [RobotCommand.forward]);
+    expect(released, isEmpty);
+
+    // A cruz sai da tela sem que o dedo tenha subido.
+    await tester.pumpWidget(montar(mostrarCruz: false));
+    await tester.pump();
+
+    expect(
+      released.length,
+      1,
+      reason: 'sumir com o dedo apertado tem que parar o robo',
+    );
+  });
+
+  testWidgets('sumir sem ninguem apertando nao manda parar a toa', (
+    tester,
+  ) async {
+    final released = <void>[];
+
+    Widget montar({required bool mostrarCruz}) => MaterialApp(
+      home: Scaffold(
+        body: mostrarCruz
+            ? DirectionPad(onPress: (_) {}, onRelease: () => released.add(null))
+            : const SizedBox.shrink(),
+      ),
+    );
+
+    await tester.pumpWidget(montar(mostrarCruz: true));
+    await tester.pumpWidget(montar(mostrarCruz: false));
+    await tester.pump();
+
+    expect(released, isEmpty);
+  });
 }
