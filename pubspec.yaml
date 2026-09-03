@@ -48,7 +48,7 @@ dependencies:
   # Mapa com OpenStreetMap. Escolhido em vez do `google_maps_flutter` porque
   # nao exige chave de API nem conta de faturamento — um projeto de curso nao
   # deve depender de um cartao de credito para abrir uma tela.
-  flutter_map: ^8.1.0
+  flutter_map: ^8.3.2
   latlong2: ^0.10.1
 
   # Graficos. `fl_chart` desenha em Canvas puro, sem plugin nativo, entao
