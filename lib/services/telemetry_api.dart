@@ -212,7 +212,20 @@ class TelemetryApi {
       );
     }
 
-    final uri = Uri.parse('$_url$caminho').replace(queryParameters: parametros);
+    // `Uri.parse` levanta `FormatException` no que uma pessoa digita errado com
+    // facilidade — um espaço no meio do endereço, por exemplo. Sem este `catch`
+    // a exceção crua subia até a tela, e o que aparecia era um traço de pilha
+    // do Dart em vez da frase que diz onde está o erro.
+    final Uri uri;
+    try {
+      uri = Uri.parse('$_url$caminho').replace(queryParameters: parametros);
+    } on FormatException {
+      throw ErroApi(
+        'o endereço "$_url" não é um endereço válido — confira nos ajustes',
+        podeTentarDeNovo: false,
+      );
+    }
+
     http.Response resposta;
     try {
       resposta = await _http

@@ -148,6 +148,24 @@ class _PadButtonState extends State<_PadButton> {
   }
 
   @override
+  void dispose() {
+    // Sumir da tela com o dedo no botao conta como soltar.
+    //
+    // Sem isto, um botao destruido enquanto pressionado nunca avisa que o dedo
+    // saiu — e quem repete o comando a cada 300 ms continua repetindo, com o
+    // robo andando e ninguem mais na tela para mandar parar. O vigia dos
+    // motores acabaria parando o robo depois de um segundo, mas so porque o
+    // celular tambem tivesse se calado; se o app seguir vivo, a repeticao
+    // segue viva com ele.
+    //
+    // E a mesma pergunta que o resto do projeto faz em cada ponto deste
+    // caminho: o que acontece se isto morrer no meio de um movimento? A
+    // resposta preferida e sempre a que para o robo.
+    if (_pressed) widget.onRelease?.call();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final enabled = widget.enabled;
     final active = _pressed && enabled;
