@@ -11,6 +11,19 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "deps"
+    ignore:
+      # O `permission_handler` 13 **nao compila o APK** deste projeto. Ja foi
+      # tentado e revertido (commits `deps: permission_handler 11 -> 13` e
+      # `fix: permission_handler volta para ^11`), e sem esta regra o
+      # Dependabot reabre o mesmo PR toda semana — um PR que so pode ser
+      # fechado, e que com o tempo passa a parecer ruido a ser ignorado, que e
+      # como um aviso de seguranca de verdade acaba passando batido.
+      #
+      # Fica preso na 11 de proposito. Ao subir a barreira um dia, tire esta
+      # regra junto: mante-la depois esconderia as correcoes de seguranca da
+      # versao nova.
+      - dependency-name: "permission_handler"
+        versions: ["13.x", "12.x"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
