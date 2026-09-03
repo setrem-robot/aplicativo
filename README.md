@@ -1,5 +1,8 @@
 # Atlas Controller
 
+> **Primeira vez aqui?** Comece por **[`COMO-FUNCIONA.md`](./COMO-FUNCIONA.md)**
+> — um passeio guiado de dez minutos pela arquitetura, com diagramas.
+
 App Android/iOS (feito em Flutter) que faz duas coisas com a **Atlas**, o robô
 do curso de Engenharia de Computação da SETREM:
 

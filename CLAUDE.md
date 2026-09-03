@@ -5,6 +5,10 @@ completo de arquivos e decisões de design, leia **[`ARQUITETURA.md`](./ARQUITET
 primeiro — este arquivo só cobre o que ela não cobre (contexto de ambiente e
 do projeto maior).
 
+**Como o app funciona, ponta a ponta:**
+[`COMO-FUNCIONA.md`](./COMO-FUNCIONA.md) — as telas, os dois serviços, o caminho
+de um toque no botão até o rádio, e por que o robô não pode sair andando.
+
 Para o que atravessa a borda do app — os UUIDs do BLE, o formato das mensagens,
 o contrato da API —, o mapa é
 [`../orquestrador/MAPA-COMUNICACAO.md`](../orquestrador/MAPA-COMUNICACAO.md).
