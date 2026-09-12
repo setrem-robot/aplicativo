@@ -10,5 +10,12 @@ app_id: 0227fdce-1d3c-4e57-8493-e1bc18d32cd0
 # auto_update controls if Shorebird should automatically update in the background on launch.
 # If auto_update: false, you will need to use package:shorebird_code_push to trigger updates.
 # https://pub.dev/packages/shorebird_code_push
-# Uncomment the following line to disable automatic updates.
-# auto_update: false
+#
+# Desligado de proposito: quem dispara o download do patch e o app, no
+# AtualizacaoService, ao abrir a tela de conexao. Isso e o que permite MOSTRAR
+# "baixando..." e depois "pronta, reabra" — com auto_update ligado o download
+# acontece calado no fundo e nao da para exibir o progresso. Todo caminho do
+# servico e nao-bloqueante e engole excecoes, entao o app abre normal mesmo se
+# a checagem falhar; mas se aquele codigo parar de rodar, os patches param de
+# ser aplicados. Ver lib/services/atualizacao.dart.
+auto_update: false

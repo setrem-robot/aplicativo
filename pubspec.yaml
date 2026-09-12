@@ -13,7 +13,7 @@ publish_to: 'none'
 # O numero antes do "+" e a versao que aparece para o usuario (1.0.0).
 # O numero depois do "+" e o codigo interno da build: o Android exige que ele
 # AUMENTE a cada atualizacao publicada, senao recusa a instalacao por cima.
-version: 1.2.2+9
+version: 1.2.3+10
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -58,6 +58,22 @@ dependencies:
 
   # Guarda o endereco e o token da API entre aberturas do app.
   shared_preferences: ^2.3.0
+
+  # --- Atualizacao OTA (Shorebird) -------------------------------------------
+  # O app se atualiza por patch do Shorebird, mas ate aqui isso era invisivel:
+  # nao dava para saber se um patch estava baixando, e o selo de versao era um
+  # numero escrito a mao que ficou defasado. Estes dois pacotes tornam a coisa
+  # visivel e verdadeira.
+
+  # Le do proprio Shorebird o numero do patch instalado e o estado da
+  # atualizacao (procurando/baixando/pronta). Com `auto_update: false` no
+  # shorebird.yaml, quem dispara o download e o app — e ai da para mostrar.
+  shorebird_code_push: ^2.0.4
+
+  # A versao REAL do build (name+build), lida da plataforma, para o selo nunca
+  # mais depender de uma constante que alguem esqueceu de atualizar. E plugin
+  # nativo, entao entra so em release novo — nao viaja por patch.
+  package_info_plus: ^8.0.0
 
 dev_dependencies:
   # Ferramenta de teste (`flutter test`). Nao vai dentro do APK.

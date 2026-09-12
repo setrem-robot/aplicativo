@@ -6,10 +6,12 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../app/theme.dart';
+import '../services/atualizacao.dart';
 import '../services/robot_connection.dart';
 import '../widgets/app_card.dart';
 import '../widgets/device_tile.dart';
 import '../widgets/brand_glow.dart';
+import '../widgets/faixa_atualizacao.dart';
 import '../widgets/radar_pulse.dart';
 import 'control_screen.dart';
 import 'telemetria_screen.dart';
@@ -43,6 +45,9 @@ class _ConnectScreenState extends State<ConnectScreen>
       duration: AppDurations.enter,
     )..forward();
     _setUpAndScan();
+    // Fora do caminho do scan de propósito: buscar atualização não depende de
+    // Bluetooth nem de permissão, e não deve atrasar a busca pelo robô.
+    AtualizacaoService.instance.verificar();
   }
 
   @override
@@ -143,6 +148,9 @@ class _ConnectScreenState extends State<ConnectScreen>
                   // uma vez -- e o que faz a abertura parecer calma.
                   _entrance(order: 0, child: _buildHeader()),
                   const SizedBox(height: 24),
+                  // A faixa de atualização: some sozinha quando não há o que
+                  // dizer, então não custa espaço no caso comum.
+                  FaixaAtualizacao(servico: AtualizacaoService.instance),
                   // Antes do radar de proposito: ver os dados nao depende de
                   // conectar, entao o atalho nao deve ficar atras do que so
                   // serve para conectar.

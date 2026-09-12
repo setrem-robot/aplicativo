@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app/versao.dart';
+import '../services/atualizacao.dart';
 
 /// A versão do build, à vista mas fora do caminho.
 ///
@@ -35,13 +36,20 @@ class SeloVersao extends StatelessWidget {
           bottom: MediaQuery.of(context).padding.bottom + 4,
           right: 10,
           child: IgnorePointer(
-            child: Text(
-              kVersaoCurta,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                height: 1,
-              ),
+            // A versão vem do próprio app (package_info), não de uma constante
+            // que envelhece — e ganha o número do patch do Shorebird junto,
+            // então o selo passou a responder também "que código estou vendo?".
+            child: AnimatedBuilder(
+              animation: AtualizacaoService.instance,
+              builder: (context, _) {
+                final servico = AtualizacaoService.instance;
+                final versao = servico.versao.isNotEmpty ? servico.versao : kVersaoCurta;
+                final texto = servico.patch != null ? '$versao · patch ${servico.patch}' : versao;
+                return Text(
+                  texto,
+                  style: const TextStyle(color: Colors.white, fontSize: 10, height: 1),
+                );
+              },
             ),
           ),
         ),
