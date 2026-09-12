@@ -199,6 +199,7 @@ class _AbaTrajeto extends StatelessWidget {
 class _Grandeza {
   const _Grandeza({
     required this.rotulo,
+    required this.grupo,
     required this.tipo,
     required this.campo,
     required this.unidade,
@@ -207,6 +208,11 @@ class _Grandeza {
   });
 
   final String rotulo;
+
+  /// A que assunto a grandeza pertence ("Raspberry Pi", "Energia", "Posição").
+  /// Serve de rótulo do grupo na barra de filtros, para a lista de chips não
+  /// virar uma fileira solta de sete nomes sem hierarquia.
+  final String grupo;
   final String tipo;
   final String campo;
   final String unidade;
@@ -214,24 +220,64 @@ class _Grandeza {
   final double? maximo;
 }
 
+/// As grandezas que dá para plotar, agrupadas por assunto.
+///
+/// A saúde do Pi entrou aqui junto: o campo pode ser aninhado (`cpu.uso_pct`),
+/// que a API resolve navegando pelo payload. Sem isso, o histórico do robô
+/// pararia na bateria e no GPS — e a pergunta "ele passou calor ontem?" não
+/// teria resposta no app, só no monitor.
 const _grandezas = [
   _Grandeza(
+    rotulo: 'Temperatura',
+    grupo: 'Raspberry Pi',
+    tipo: 'sistema',
+    campo: 'temperatura_c',
+    unidade: '°C',
+  ),
+  _Grandeza(
+    rotulo: 'CPU',
+    grupo: 'Raspberry Pi',
+    tipo: 'sistema',
+    campo: 'cpu.uso_pct',
+    unidade: '%',
+    minimo: 0,
+    maximo: 100,
+  ),
+  _Grandeza(
+    rotulo: 'Memória',
+    grupo: 'Raspberry Pi',
+    tipo: 'sistema',
+    campo: 'memoria.uso_pct',
+    unidade: '%',
+    minimo: 0,
+    maximo: 100,
+  ),
+  _Grandeza(
     rotulo: 'Bateria',
+    grupo: 'Energia',
     tipo: 'bateria',
     campo: 'percentual',
     unidade: '%',
     minimo: 0,
     maximo: 100,
   ),
-  _Grandeza(rotulo: 'Tensão', tipo: 'bateria', campo: 'tensao_v', unidade: 'V'),
+  _Grandeza(rotulo: 'Tensão', grupo: 'Energia', tipo: 'bateria', campo: 'tensao_v', unidade: 'V'),
   _Grandeza(
     rotulo: 'Velocidade',
+    grupo: 'Posição',
     tipo: 'gps',
     campo: 'velocidade_kmh',
     unidade: 'km/h',
     minimo: 0,
   ),
-  _Grandeza(rotulo: 'Satélites', tipo: 'gps', campo: 'satelites', unidade: '', minimo: 0),
+  _Grandeza(
+    rotulo: 'Satélites',
+    grupo: 'Posição',
+    tipo: 'gps',
+    campo: 'satelites',
+    unidade: '',
+    minimo: 0,
+  ),
 ];
 
 /// Janelas que fazem sentido num celular, com o passo de agregação de cada uma.
@@ -272,7 +318,7 @@ class _AbaHistoricoState extends State<_AbaHistorico> {
           child: Carregando<List<PontoSerie>>(
             // A chave força um estado novo quando o filtro muda; sem ela o
             // `Carregando` guardaria o Future antigo e o gráfico não mudaria.
-            key: ValueKey('${_grandeza.rotulo}|$_janela'),
+            key: ValueKey('${_grandeza.tipo}.${_grandeza.campo}|$_janela'),
             buscar: () => TelemetryApi.instance.serie(
               tipo: _grandeza.tipo,
               campo: _grandeza.campo,
@@ -320,16 +366,35 @@ class _Filtros extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                for (final opcao in _grandezas)
+                for (var i = 0; i < _grandezas.length; i++) ...[
+                  // Rótulo do grupo antes do primeiro chip dele: dá hierarquia
+                  // à fileira, para sete nomes não virarem uma lista solta.
+                  if (i == 0 || _grandezas[i].grupo != _grandezas[i - 1].grupo)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        left: i == 0 ? 0 : AppSpacing.small,
+                        right: AppSpacing.small,
+                      ),
+                      child: Text(
+                        _grandezas[i].grupo.toUpperCase(),
+                        style: AppText.meta.copyWith(
+                          fontSize: 10,
+                          letterSpacing: 0.8,
+                          color: AppColors.textoApagado,
+                        ),
+                      ),
+                    ),
                   Padding(
                     padding: const EdgeInsets.only(right: AppSpacing.small),
                     child: ChoiceChip(
-                      label: Text(opcao.rotulo),
-                      selected: opcao.rotulo == grandeza.rotulo,
-                      onSelected: (_) => aoTrocarGrandeza(opcao),
+                      label: Text(_grandezas[i].rotulo),
+                      selected: _grandezas[i].campo == grandeza.campo &&
+                          _grandezas[i].tipo == grandeza.tipo,
+                      onSelected: (_) => aoTrocarGrandeza(_grandezas[i]),
                       selectedColor: AppColors.primary,
                       labelStyle: TextStyle(
-                        color: opcao.rotulo == grandeza.rotulo
+                        color: _grandezas[i].campo == grandeza.campo &&
+                                _grandezas[i].tipo == grandeza.tipo
                             ? AppColors.onBrand
                             : Colors.white70,
                       ),
@@ -337,6 +402,7 @@ class _Filtros extends StatelessWidget {
                       side: BorderSide.none,
                     ),
                   ),
+                ],
               ],
             ),
           ),
@@ -373,7 +439,7 @@ class _AbaEventos extends StatefulWidget {
 class _AbaEventosState extends State<_AbaEventos> {
   String? _tipo;
 
-  static const _tipos = [null, 'gps', 'bateria', 'motores', 'wifi'];
+  static const _tipos = [null, 'sistema', 'gps', 'bateria', 'motores', 'wifi'];
 
   @override
   Widget build(BuildContext context) {

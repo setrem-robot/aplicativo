@@ -8,8 +8,10 @@ do curso de Engenharia de Computação da SETREM:
 
 - **Dirigir**, por Bluetooth Low Energy — você escaneia, conecta direto (sem
   pareamento prévio) e usa uma cruz direcional na tela.
-- **Ver os dados**, por HTTPS — bateria, posição no mapa, gráficos de histórico
-  e os eventos crus, lidos da API de telemetria.
+- **Ver os dados**, por HTTPS — a saúde do Raspberry Pi (temperatura, CPU por
+  núcleo, memória, disco), bateria, posição no mapa, gráficos de histórico com
+  análise (mínimo, média, máximo e variação do período) e os eventos crus,
+  lidos da API de telemetria.
 
 Os dois caminhos são independentes de propósito: dá para ver a telemetria de
 casa, longe do robô, e dá para dirigir sem internet nenhuma.
@@ -25,9 +27,9 @@ casa, longe do robô, e dá para dirigir sem internet nenhuma.
 
 | Repositório | O que é | O que faz |
 |---|---|---|
-| [**aplicativo**](https://github.com/setrem-robot/aplicativo) *(este)* | o controle | dirigir o robô e ver os dados |
+| [**aplicativo**](https://github.com/setrem-robot/aplicativo) *(este)* | o controle | app Flutter: dirigir o robô e ver os dados |
 | [**orquestrador**](https://github.com/setrem-robot/orquestrador) | o corpo | motores, GPS, Wi-Fi, telemetria e a nuvem |
-| [**atlas_ai_v2**](https://github.com/setrem-robot/atlas_ai_v2) | a cara | face animada, voz, IA e a ponte Bluetooth |
+| [**atlas_ai_v2**](https://github.com/setrem-robot/atlas_ai_v2) | a cara | face animada, voz, conversa com IA e a ponte Bluetooth |
 
 > **Do outro lado do BLE não há mais um ESP32.** Quem anuncia o serviço hoje é o
 > próprio Raspberry Pi, em `src/roboteye/ble/` no repositório da cara — o Pi 5
