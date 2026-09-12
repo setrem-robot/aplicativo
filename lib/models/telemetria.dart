@@ -91,6 +91,28 @@ class LeituraAtual {
 
   /// Um campo do payload como texto, vazio se não vier.
   String texto(String campo) => dados[campo]?.toString() ?? '';
+
+  /// Um bloco aninhado do payload (`cpu`, `memoria`, `throttled`, ...), ou
+  /// vazio quando ele não veio. A saúde do Pi guarda os números dentro desses
+  /// blocos, então ler `cpu.uso_pct` é `bloco('cpu')`, depois `numero`.
+  Map<String, dynamic> bloco(String campo) {
+    final valor = dados[campo];
+    return valor is Map ? valor.cast<String, dynamic>() : const {};
+  }
+
+  /// Um número dentro de um bloco aninhado (ex.: `cpu` → `uso_pct`).
+  double? numeroEm(String bloco, String campo) => _numero(this.bloco(bloco)[campo]);
+
+  /// Uma lista de números de um bloco (ex.: `cpu.por_nucleo`), descartando o
+  /// que não for número — na primeira leitura de CPU os núcleos vêm nulos.
+  List<double> numerosEm(String bloco, String campo) {
+    final bruto = this.bloco(bloco)[campo];
+    if (bruto is! List) return const [];
+    return [for (final v in bruto) if (_numero(v) != null) _numero(v)!];
+  }
+
+  /// Se o campo booleano do payload é verdadeiro (ex.: `throttled.ok`).
+  bool verdadeiroEm(String bloco, String campo) => this.bloco(bloco)[campo] == true;
 }
 
 /// O estado do robô agora: a última leitura de cada tipo.
@@ -104,6 +126,10 @@ class EstadoRobo {
   LeituraAtual? get bateria => itens['bateria'];
   LeituraAtual? get motores => itens['motores'];
   LeituraAtual? get wifi => itens['wifi'];
+
+  /// A saúde do próprio Raspberry Pi (temperatura, CPU, memória, disco, rede).
+  /// É a única leitura sempre real: os outros tipos ainda podem vir semeados.
+  LeituraAtual? get sistema => itens['sistema'];
 
   bool get vazio => itens.isEmpty;
 

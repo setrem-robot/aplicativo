@@ -106,10 +106,10 @@ E o caminho de um gráfico na tela de telemetria:
 | # | Onde | O que acontece |
 |---|---|---|
 | 1 | `screens/telemetria_screen.dart` | A tela abre, ou alguém puxa para atualizar. **Não há polling**: os dados não chegam sozinhos. |
-| 2 | `services/telemetry_api.dart` | `GET /v1/serie/bateria?campo=percentual&intervalo=1h`, com `Authorization: Bearer`. Um `http.Client` só, reaproveitado — um cliente novo por requisição refaria o aperto de mão TLS toda vez. |
+| 2 | `services/telemetry_api.dart` | `GET /v1/serie/sistema?campo=cpu.uso_pct&intervalo=1h`, com `Authorization: Bearer`. O `campo` pode ser aninhado (a saúde do Pi guarda os números dentro de blocos), e a API resolve isso navegando pelo payload. Um `http.Client` só, reaproveitado — um cliente novo por requisição refaria o aperto de mão TLS toda vez. |
 | 3 | idem | Traduz a falha para o que a pessoa tem de conferir: “a API não respondeu a tempo”, “token recusado”, “o Android bloqueou porque o endereço é http://”. Nunca um `SocketException` cru na tela. |
 | 4 | `models/telemetria.dart` | `PontoSerie.fromJson`, **tolerante**: campo ausente ou com tipo errado vira `null`, nunca uma exceção. |
-| 5 | `widgets/grafico_serie.dart` | Desenha. |
+| 5 | `widgets/grafico_serie.dart` | Desenha a linha e, abaixo dela, a leitura analítica do período: mínimo, média, máximo e variação. |
 
 ---
 
@@ -122,7 +122,7 @@ E o caminho de um gráfico na tela de telemetria:
 | **`ConnectScreen`** | Ao abrir o app | Escaneia por quem anuncia o serviço BLE do Atlas. É a porta de entrada para as outras duas rotas: controlar e ver dados. |
 | **`ControlScreen`** | Depois de conectar | A cruz direcional e o estado da conexão. Envolvida por um `ListenableBuilder`: quando a conexão cai sozinha, a tela se redesenha e o indicador fala a verdade. |
 | **`RotaSeguraScreen`** | Da tela de controle | Desenha waypoints num mapa OpenStreetMap, dentro de uma cerca. |
-| **`TelemetriaScreen`** | Da tela de conexão | Painel, mapa do trajeto, gráficos e a lista de eventos crus. |
+| **`TelemetriaScreen`** | Da tela de conexão | Quatro abas: **Agora** (a saúde do Pi — temperatura, CPU por núcleo, memória, disco — mais bateria, posição, motores e rede), **Trajeto** (o mapa), **Histórico** (gráficos com análise de mín/média/máx) e **Eventos** (a lista crua). |
 | **`AjustesApiScreen`** | Da tela de telemetria | Endereço e token da API — e **testa antes de salvar**. |
 
 ### Os dois serviços

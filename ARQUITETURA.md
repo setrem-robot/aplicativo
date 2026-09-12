@@ -225,9 +225,9 @@ que um que mostra um traço.
 
 | Aba | Responde |
 |---|---|
-| **Agora** | o robô está bem? bateria, posição, motores, rede — cada um com a idade do dado |
+| **Agora** | o robô está bem? a saúde do Pi (temperatura, CPU total e por núcleo, memória, disco, `throttled`), bateria, posição, motores e rede — cada um com a idade do dado |
 | **Trajeto** | por onde ele andou? mapa com a linha do percurso |
-| **Histórico** | como isso mudou? gráfico de bateria, tensão, velocidade ou satélites |
+| **Histórico** | como isso mudou? gráfico de temperatura, CPU, memória, bateria, tensão, velocidade ou satélites, com a análise do período (mínimo, média, máximo, variação) abaixo da linha |
 | **Eventos** | o que exatamente chegou? as mensagens cruas, com o JSON completo |
 
 A aba de eventos é a mais feia e a que mais salva uma depuração em campo: as

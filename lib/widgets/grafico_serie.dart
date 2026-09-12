@@ -64,6 +64,7 @@ class _GraficoSerieState extends State<GraficoSerie> {
           unidade: widget.unidade,
           acompanhando: _tocado != null,
         ),
+        _TiraEstatisticas(pontos: pontos, unidade: widget.unidade),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -240,6 +241,98 @@ class _Leitura extends StatelessWidget {
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A leitura analítica do período: mínimo, média, máximo e variação.
+///
+/// É o que transforma o gráfico de "uma linha bonita" em análise: a linha
+/// mostra a forma, os números embaixo respondem "quão quente chegou?", "qual
+/// foi a média?", "quanto oscilou?". A variação é máximo − mínimo, o intervalo
+/// que o valor percorreu na janela.
+class _TiraEstatisticas extends StatelessWidget {
+  const _TiraEstatisticas({required this.pontos, required this.unidade});
+
+  final List<PontoSerie> pontos;
+  final String unidade;
+
+  @override
+  Widget build(BuildContext context) {
+    final valores = pontos.map((p) => p.valor);
+    final minimo = valores.reduce(_menor);
+    final maximo = valores.reduce(_maior);
+    final media = valores.reduce((a, b) => a + b) / pontos.length;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.large,
+        0,
+        AppSpacing.large,
+        AppSpacing.small,
+      ),
+      child: Row(
+        children: [
+          _Estatistica(rotulo: 'mín', valor: minimo, unidade: unidade),
+          _Estatistica(rotulo: 'média', valor: media, unidade: unidade),
+          _Estatistica(rotulo: 'máx', valor: maximo, unidade: unidade),
+          _Estatistica(rotulo: 'variação', valor: maximo - minimo, unidade: unidade),
+        ],
+      ),
+    );
+  }
+}
+
+class _Estatistica extends StatelessWidget {
+  const _Estatistica({
+    required this.rotulo,
+    required this.valor,
+    required this.unidade,
+  });
+
+  final String rotulo;
+  final double valor;
+  final String unidade;
+
+  @override
+  Widget build(BuildContext context) {
+    // Casas conforme a grandeza do número: sem elas, "média 66" e "média 66.4"
+    // pareceriam iguais; com muitas, "1500.0 MHz" só faz ruído.
+    final casas = valor.abs() >= 100 ? 0 : 1;
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(rotulo, style: const TextStyle(color: AppColors.textoApagado, fontSize: 10.5)),
+          const SizedBox(height: 2),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Flexible(
+                child: Text(
+                  valor.toStringAsFixed(casas),
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.texto,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              if (unidade.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(left: 2),
+                  child: Text(
+                    unidade,
+                    style: const TextStyle(color: AppColors.textoApagado, fontSize: 10.5),
+                  ),
+                ),
             ],
           ),
         ],
