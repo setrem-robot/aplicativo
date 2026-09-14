@@ -4,7 +4,7 @@
 /// Este arquivo é só dados e regra — não conhece mapa nem Bluetooth. Quem
 /// desenha é a tela; quem envia é o [RobotConnection]. É o que permite testar
 /// a validação e o fatiamento sem celular e sem robô (ver
-/// `test/rota_segura_test.dart`).
+/// `test/rotaSegura_test.dart`).
 library;
 
 import 'dart:convert';
@@ -12,7 +12,7 @@ import 'dart:convert';
 import 'package:latlong2/latlong.dart';
 
 /// Cálculo de distância pela fórmula de Haversine (leva em conta a curvatura da
-/// Terra). O mesmo que `mapa_trajeto.dart` usa para medir o percurso.
+/// Terra). O mesmo que `mapaTrajeto.dart` usa para medir o percurso.
 const _distancia = Distance();
 
 /// Um waypoint da rota.

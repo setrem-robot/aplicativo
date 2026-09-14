@@ -33,6 +33,11 @@ linter:
     # real: widgets marcados como const nao sao reconstruidos a toa.
     prefer_const_constructors: true
 
+    # Os arquivos deste projeto seguem camelCase (painelEstado.dart), e nao o
+    # snake_case que o Dart sugere por padrao. E uma escolha de estilo do
+    # projeto; sem desligar esta regra, o analyze acusaria cada arquivo.
+    file_names: false
+
     # Para desligar uma regra so numa linha, escreva acima dela:
     #     // ignore: nome_da_regra
     # Documentacao de todas as regras: https://dart.dev/lints

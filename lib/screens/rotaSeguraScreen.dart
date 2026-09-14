@@ -3,10 +3,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../app/theme.dart';
-import '../models/rota_segura.dart';
-import '../services/robot_connection.dart';
-import '../services/rota_store.dart';
-import '../widgets/camada_osm.dart';
+import '../models/rotaSegura.dart';
+import '../services/robotConnection.dart';
+import '../services/rotaStore.dart';
+import '../widgets/camadaOsm.dart';
 
 /// Planejamento da "rota segura": os waypoints que o robô poderá seguir, presos
 /// dentro de uma cerca em volta do ponto de partida.

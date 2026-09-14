@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:robot_controller/models/rota_segura.dart';
+import 'package:robot_controller/models/rotaSegura.dart';
 
 /// A rota segura é lógica pura — validação da cerca e fatiamento para o BLE. São
 /// exatamente as regras que, se quebrarem, mandam o robô para fora da área

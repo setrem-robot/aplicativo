@@ -2,11 +2,11 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/rota_segura.dart';
+import '../models/rotaSegura.dart';
 
 /// Guarda a última rota planejada entre aberturas do app.
 ///
-/// Mesma escolha do endereço da API (`ajustes_api_screen.dart`):
+/// Mesma escolha do endereço da API (`ajustesApiScreen.dart`):
 /// `SharedPreferences`, porque é só uma conveniência local — a rota não é dado
 /// sensível e não precisa sair do aparelho. Quem lê e grava aqui não sabe o que
 /// é tela, a mesma regra que vale para o Bluetooth e para o HTTP.

@@ -4,7 +4,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../app/theme.dart';
 import '../models/telemetria.dart';
-import 'camada_osm.dart';
+import 'camadaOsm.dart';
 
 /// O percurso do robô desenhado sobre o mapa.
 ///

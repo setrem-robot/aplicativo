@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../app/theme.dart';
-import 'app_card.dart';
+import 'appCard.dart';
 
 /// Uma linha da lista de robos encontrados no escaneamento BLE.
 class DeviceTile extends StatelessWidget {

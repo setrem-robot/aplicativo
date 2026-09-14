@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
-import '../services/telemetry_api.dart';
+import '../services/telemetryApi.dart';
 
 /// O ciclo "carregando → deu certo → deu errado", uma vez só.
 ///

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app/theme.dart';
-import 'screens/connect_screen.dart';
-import 'widgets/selo_versao.dart';
+import 'screens/connectScreen.dart';
+import 'widgets/seloVersao.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

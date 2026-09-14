@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
-import '../models/robot_command.dart';
-import '../services/robot_connection.dart';
-import 'rota_segura_screen.dart';
-import '../widgets/app_card.dart';
-import '../widgets/brand_glow.dart';
-import '../widgets/direction_pad.dart';
+import '../models/robotCommand.dart';
+import '../services/robotConnection.dart';
+import 'rotaSeguraScreen.dart';
+import '../widgets/appCard.dart';
+import '../widgets/brandGlow.dart';
+import '../widgets/directionPad.dart';
 
 /// SEGUNDA TELA DO APP: o controle do robo.
 ///

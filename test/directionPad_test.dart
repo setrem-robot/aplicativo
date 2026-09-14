@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:robot_controller/models/robot_command.dart';
-import 'package:robot_controller/widgets/direction_pad.dart';
+import 'package:robot_controller/models/robotCommand.dart';
+import 'package:robot_controller/widgets/directionPad.dart';
 
 /// Testes da cruz direcional.
 ///

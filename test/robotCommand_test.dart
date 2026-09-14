@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:robot_controller/models/robot_command.dart';
+import 'package:robot_controller/models/robotCommand.dart';
 
 /// Testes da tabela de comandos.
 ///

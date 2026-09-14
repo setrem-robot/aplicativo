@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
-import '../models/robot_command.dart';
-import '../models/rota_segura.dart';
+import '../models/robotCommand.dart';
+import '../models/rotaSegura.dart';
 
 /// Em que ponto da conexao o app esta.
 enum ConnectionStatus { disconnected, connecting, connected }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app/theme.dart';
-import '../models/robot_command.dart';
+import '../models/robotCommand.dart';
 
 /// A cruz direcional (o "D-pad") com o botao STOP no meio.
 ///

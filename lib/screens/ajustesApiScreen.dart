@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
-import '../services/telemetry_api.dart';
-import '../widgets/app_card.dart';
+import '../services/telemetryApi.dart';
+import '../widgets/appCard.dart';
 
 /// Onde fica a API, e o token para falar com ela.
 ///

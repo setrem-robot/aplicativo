@@ -7,14 +7,14 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../app/theme.dart';
 import '../services/atualizacao.dart';
-import '../services/robot_connection.dart';
-import '../widgets/app_card.dart';
-import '../widgets/device_tile.dart';
-import '../widgets/brand_glow.dart';
-import '../widgets/faixa_atualizacao.dart';
-import '../widgets/radar_pulse.dart';
-import 'control_screen.dart';
-import 'telemetria_screen.dart';
+import '../services/robotConnection.dart';
+import '../widgets/appCard.dart';
+import '../widgets/deviceTile.dart';
+import '../widgets/brandGlow.dart';
+import '../widgets/faixaAtualizacao.dart';
+import '../widgets/radarPulse.dart';
+import 'controlScreen.dart';
+import 'telemetriaScreen.dart';
 
 /// PRIMEIRA TELA DO APP: escaneia por robos anunciando o servico BLE do
 /// Atlas e, ao conectar, abre a [ControlScreen].

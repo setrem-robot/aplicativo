@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
 import '../models/telemetria.dart';
-import '../services/telemetry_api.dart';
+import '../services/telemetryApi.dart';
 import '../widgets/carregando.dart';
-import '../widgets/grafico_serie.dart';
-import '../widgets/lista_eventos.dart';
-import '../widgets/mapa_trajeto.dart';
-import '../widgets/painel_estado.dart';
-import 'ajustes_api_screen.dart';
+import '../widgets/graficoSerie.dart';
+import '../widgets/listaEventos.dart';
+import '../widgets/mapaTrajeto.dart';
+import '../widgets/painelEstado.dart';
+import 'ajustesApiScreen.dart';
 
 /// O que o robô fez, lido do banco na nuvem.
 ///
