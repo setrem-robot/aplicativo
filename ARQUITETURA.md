@@ -359,4 +359,4 @@ Pendências conhecidas, para decidir depois:
   o projeto migrou de Bluetooth Classic (SPP) para BLE, usando
   `flutter_blue_plus`. Isso também foi o que permitiu suporte a iOS (o
   Bluetooth Classic nunca existiu lá). O firmware do ESP32 foi migrado junto
-  — veja `esp32_ble_bridge.ino` no repositório `orquestrador`.
+  — veja `esp32BleBridge.ino` no repositório `orquestrador`.

@@ -51,7 +51,7 @@ arquitetura do app:
 - UUIDs do serviço BLE (padrão Nordic UART Service) estão em
   `RobotBleIds` (`lib/services/robotConnection.dart`) e **precisam bater**
   com os mesmos UUIDs em
-  `../orquestrador/esp32/esp32_ble_bridge/esp32_ble_bridge.ino`. Mudou um
+  `../orquestrador/esp32/esp32BleBridge/esp32BleBridge.ino`. Mudou um
   lado, muda o outro.
 - BLE não usa pareamento prévio do sistema (diferente do Classic): a tela de
   conexão escaneia (`RobotConnection.scan()`), não lista pareados.

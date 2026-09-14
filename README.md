@@ -382,7 +382,7 @@ celulares — só reinstalando do zero.
 | o texto de um botão ou aviso | a tela correspondente em `lib/screens/` |
 | adicionar um comando novo (buzina, luz) | `lib/models/robotCommand.dart` |
 | o formato do que vai pelo Bluetooth | `lib/services/robotConnection.dart`, método `send` |
-| os UUIDs do serviço BLE | `RobotBleIds` em `robotConnection.dart` **e** `esp32_ble_bridge.ino` (os dois lados) |
+| os UUIDs do serviço BLE | `RobotBleIds` em `robotConnection.dart` **e** `esp32BleBridge.ino` (os dois lados) |
 | o nome do app no celular | `android/app/src/main/AndroidManifest.xml`, atributo `android:label` |
 | o ícone do app | `android/app/src/main/res/mipmap-*/` |
 
