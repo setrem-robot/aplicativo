@@ -255,7 +255,7 @@ flutter run -d linux
 Isso conecta de fato no ESP32 físico, sem precisar de celular nenhum. É o
 jeito mais rápido de testar a lógica de conexão durante o desenvolvimento.
 Único cuidado: `permission_handler` não tem implementação para desktop —
-`connect_screen.dart` já pula o pedido de permissão fora de Android/iOS de
+`connectScreen.dart` já pula o pedido de permissão fora de Android/iOS de
 propósito, não "conserte" isso adicionando a chamada de volta.
 
 ### Testar no Android (físico ou emulador)
@@ -380,9 +380,9 @@ celulares — só reinstalando do zero.
 |---|---|
 | as cores do app | `lib/app/theme.dart` |
 | o texto de um botão ou aviso | a tela correspondente em `lib/screens/` |
-| adicionar um comando novo (buzina, luz) | `lib/models/robot_command.dart` |
-| o formato do que vai pelo Bluetooth | `lib/services/robot_connection.dart`, método `send` |
-| os UUIDs do serviço BLE | `RobotBleIds` em `robot_connection.dart` **e** `esp32_ble_bridge.ino` (os dois lados) |
+| adicionar um comando novo (buzina, luz) | `lib/models/robotCommand.dart` |
+| o formato do que vai pelo Bluetooth | `lib/services/robotConnection.dart`, método `send` |
+| os UUIDs do serviço BLE | `RobotBleIds` em `robotConnection.dart` **e** `esp32_ble_bridge.ino` (os dois lados) |
 | o nome do app no celular | `android/app/src/main/AndroidManifest.xml`, atributo `android:label` |
 | o ícone do app | `android/app/src/main/res/mipmap-*/` |
 

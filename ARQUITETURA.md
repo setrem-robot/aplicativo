@@ -19,32 +19,32 @@ lib/
 │   └── theme.dart               ② cores e espaçamentos (a "identidade visual")
 │
 ├── models/
-│   ├── robot_command.dart       ③ os comandos que o robô entende
+│   ├── robotCommand.dart       ③ os comandos que o robô entende
 │   ├── telemetria.dart          ⑧ o que a API devolve, em objetos
-│   └── rota_segura.dart         ⑭ a rota segura: waypoints + cerca
+│   └── rotaSegura.dart         ⑭ a rota segura: waypoints + cerca
 │
 ├── services/
-│   ├── robot_connection.dart    ④ o Bluetooth — o cérebro do app
-│   ├── telemetry_api.dart       ⑨ o HTTP — a outra metade dos dados
-│   └── rota_store.dart          ⑭ guarda a rota entre aberturas
+│   ├── robotConnection.dart    ④ o Bluetooth — o cérebro do app
+│   ├── telemetryApi.dart       ⑨ o HTTP — a outra metade dos dados
+│   └── rotaStore.dart          ⑭ guarda a rota entre aberturas
 │
 ├── screens/
-│   ├── connect_screen.dart      ⑤ tela 1: escolher o robô
-│   ├── control_screen.dart      ⑥ tela 2: dirigir o robô
-│   ├── telemetria_screen.dart   ⑩ tela 3: o que o robô fez (quatro abas)
-│   ├── ajustes_api_screen.dart  ⑪ onde ficam os dados
-│   └── rota_segura_screen.dart  ⑭ desenhar a rota sobre o mapa
+│   ├── connectScreen.dart      ⑤ tela 1: escolher o robô
+│   ├── controlScreen.dart      ⑥ tela 2: dirigir o robô
+│   ├── telemetriaScreen.dart   ⑩ tela 3: o que o robô fez (quatro abas)
+│   ├── ajustesApiScreen.dart  ⑪ onde ficam os dados
+│   └── rotaSeguraScreen.dart  ⑭ desenhar a rota sobre o mapa
 │
 └── widgets/
-    ├── camada_osm.dart          ⑭ o mapa OSM (tiles + atribuição)
-    ├── app_card.dart            ⑦ peças visuais reaproveitadas
-    ├── device_tile.dart
-    ├── direction_pad.dart
+    ├── camadaOsm.dart          ⑭ o mapa OSM (tiles + atribuição)
+    ├── appCard.dart            ⑦ peças visuais reaproveitadas
+    ├── deviceTile.dart
+    ├── directionPad.dart
     ├── carregando.dart          ⑫ o ciclo "carregando → deu certo → deu errado"
-    ├── painel_estado.dart       ⑬ as quatro abas da telemetria
-    ├── mapa_trajeto.dart
-    ├── grafico_serie.dart
-    └── lista_eventos.dart
+    ├── painelEstado.dart       ⑬ as quatro abas da telemetria
+    ├── mapaTrajeto.dart
+    ├── graficoSerie.dart
+    └── listaEventos.dart
 ```
 
 ### A regra que organiza tudo
@@ -57,8 +57,8 @@ serviços, e nenhuma tela fala direto com rádio ou com rede:
 
 | Serviço | De onde vêm os dados | Quando funciona |
 |---|---|---|
-| `robot_connection.dart` | o rádio BLE do robô | perto do robô, com ele ligado |
-| `telemetry_api.dart` | a API na VM do LARCC | de qualquer lugar, robô ligado ou não |
+| `robotConnection.dart` | o rádio BLE do robô | perto do robô, com ele ligado |
+| `telemetryApi.dart` | a API na VM do LARCC | de qualquer lugar, robô ligado ou não |
 
 Essa segunda linha é o ponto: o histórico **não depende do robô**. É por isso
 que a tela de dados é alcançada da tela de conexão, e não da de controle —
@@ -101,7 +101,7 @@ color: AppColors.primary
 Também tem `AppSpacing` (as distâncias padrão) e `AppTheme.dark` (o tema que
 o `main.dart` aplica).
 
-### ③ `models/robot_command.dart` — os comandos
+### ③ `models/robotCommand.dart` — os comandos
 
 Um `enum`: uma lista fechada de valores possíveis. Cada comando carrega três
 informações juntas — a letra que vai pelo Bluetooth, o texto que aparece na
@@ -120,7 +120,7 @@ ignorava o comando — você descobriria com o robô na mão. Agora
 linha no enum. Ele aparece automaticamente na legenda do rodapé da tela de
 controle, porque aquela legenda é montada a partir do próprio enum.
 
-### ④ `services/robot_connection.dart` — o Bluetooth
+### ④ `services/robotConnection.dart` — o Bluetooth
 
 O arquivo mais importante. Responsabilidades:
 
@@ -160,7 +160,7 @@ ListenableBuilder(
 Existe **um único** `RobotConnection` no app inteiro
 (`RobotConnection.instance`), porque só há um rádio Bluetooth e um robô.
 
-### ⑤ `screens/connect_screen.dart` — a primeira tela
+### ⑤ `screens/connectScreen.dart` — a primeira tela
 
 Pede as permissões do Android, verifica se o Bluetooth está ligado, lista os
 aparelhos pareados e conecta no que você tocar.
@@ -169,7 +169,7 @@ Este app **não faz busca por aparelhos novos** — o ESP32 precisa ter sido
 pareado antes em Configurações → Bluetooth do Android. É por isso que existe
 aquela faixa azul de aviso no rodapé da tela.
 
-### ⑥ `screens/control_screen.dart` — a segunda tela
+### ⑥ `screens/controlScreen.dart` — a segunda tela
 
 A cruz direcional, o status e o botão de desconectar. A tela inteira está
 dentro de um `ListenableBuilder`, então ela acompanha o estado real da
@@ -196,15 +196,15 @@ O `DirectionPad` merece atenção porque ilustra bem a regra da seção 1: ele
 **não conhece o Bluetooth**. Ele só avisa "apertaram FRENTE" / "soltaram o
 botão", e quem decide o que fazer é a tela de controle. É justamente por
 isso que dá para testá-lo sem celular e sem robô nenhum — veja
-`test/direction_pad_test.dart`.
+`test/directionPad_test.dart`.
 
-### ⑧⑨ `telemetria.dart` e `telemetry_api.dart` — os dados da nuvem
+### ⑧⑨ `telemetria.dart` e `telemetryApi.dart` — os dados da nuvem
 
 O robô grava o que faz num TimescaleDB numa VM do LARCC. O app lê de lá por uma
 API HTTP — e é isso que permite ver o trajeto de ontem sentado em casa, com o
 robô desligado.
 
-`telemetry_api.dart` é o **único** arquivo do app que sabe o que é HTTP. Ele
+`telemetryApi.dart` é o **único** arquivo do app que sabe o que é HTTP. Ele
 guarda o endereço e o token, monta as requisições e traduz falha de rede em
 frase que uma pessoa entende: `SocketException: Failed host lookup` vira "não
 consegui alcançar a API — confira o endereço e a internet".
@@ -221,7 +221,7 @@ payload da telemetria é livre — cada grupo do projeto publica o que decidir �
 um app que quebra a tela porque o GPS parou de mandar `satelites` seria pior
 que um que mostra um traço.
 
-### ⑩ `telemetria_screen.dart` — quatro perguntas diferentes
+### ⑩ `telemetriaScreen.dart` — quatro perguntas diferentes
 
 | Aba | Responde |
 |---|---|
@@ -257,11 +257,11 @@ Uma rota é uma lista de waypoints presa dentro de uma **cerca**: um círculo em
 volta do ponto de partida. O primeiro toque no mapa fixa a partida (o centro da
 cerca) e os pontos seguintes só entram se couberem dentro do raio. É daí que vem
 o "segura": não dá para, sem querer, desenhar uma rota que leva o robô para fora
-da área combinada — a validação está em `rota_segura.dart`, testada sem mapa e
+da área combinada — a validação está em `rotaSegura.dart`, testada sem mapa e
 sem robô.
 
 Ela segue a mesma regra de ouro das outras duas fontes de dados. A **tela**
-(`rota_segura_screen.dart`) só desenha e decide o que é um ponto válido; quem
+(`rotaSeguraScreen.dart`) só desenha e decide o que é um ponto válido; quem
 **envia** é o `RobotConnection.enviarRota` (o único que fala com o rádio), e quem
 **guarda** entre aberturas é o `RotaStore` (SharedPreferences, como o endereço da
 API). O envio é **fatiado**: cada linha BLE não pode passar de 512 bytes (limite
@@ -270,7 +270,7 @@ waypoint → `fim`, cada linha bem abaixo do teto. O contrato completo está em
 `../orquestrador/docs/contrato-mqtt.md`.
 
 O mapa da OSM (os tiles e a atribuição que a licença exige) saiu para
-`widgets/camada_osm.dart`, porque agora duas telas o usam — o trajeto da
+`widgets/camadaOsm.dart`, porque agora duas telas o usam — o trajeto da
 telemetria e esta. Era exatamente a duplicação que a seção ② descreve, só que de
 um mapa em vez de uma cor.
 
@@ -290,10 +290,10 @@ flutter test
 
 | Arquivo | O que garante |
 |---|---|
-| `test/robot_command_test.dart` | nenhum comando repete a letra de outro |
-| `test/direction_pad_test.dart` | apertar move, soltar para, desconectado não responde |
+| `test/robotCommand_test.dart` | nenhum comando repete a letra de outro |
+| `test/directionPad_test.dart` | apertar move, soltar para, desconectado não responde |
 | `test/telemetria_test.dart` | payload torto não derruba a tela, e a idade vem da API |
-| `test/rota_segura_test.dart` | ponto fora da cerca é recusado, e a rota fatiada cabe no limite BLE |
+| `test/rotaSegura_test.dart` | ponto fora da cerca é recusado, e a rota fatiada cabe no limite BLE |
 
 São poucos e rápidos, e cobrem justamente as regras que, se quebrarem, fazem
 o robô se comportar mal de um jeito difícil de perceber olhando a tela.

@@ -18,7 +18,7 @@ produção: os serviços do `orquestrador` (o roteador e o `motores`) **não est
 instalados**. O comando sai daqui, atravessa o BLE, chega em
 `robo/comando/entrada` — e para ali, porque ninguém assina esse tópico. O app
 mostra "conectado" e está certo: ele fez a parte dele. Ver a §0 do mapa antes de
-procurar defeito em `robot_connection.dart`.
+procurar defeito em `robotConnection.dart`.
 
 ## Regra de ouro do projeto (de `ARQUITETURA.md`)
 
@@ -27,9 +27,9 @@ procurar defeito em `robot_connection.dart`.
 
 São **dois** serviços, e nenhuma tela fala direto com rádio nem com rede:
 
-- `lib/services/robot_connection.dart` — o BLE. Mexeu em como o app conversa
+- `lib/services/robotConnection.dart` — o BLE. Mexeu em como o app conversa
   com o robô? É ali, e nada mais deveria mudar.
-- `lib/services/telemetry_api.dart` — o HTTP da telemetria. É o único arquivo
+- `lib/services/telemetryApi.dart` — o HTTP da telemetria. É o único arquivo
   do app que sabe o que é uma requisição.
 
 A diferença entre os dois não é só de transporte: o BLE só funciona perto do
@@ -49,7 +49,7 @@ arquitetura do app:
   Setrem). Não remova esse argumento nem troque para `commercial` sem
   entender a licença do pacote.
 - UUIDs do serviço BLE (padrão Nordic UART Service) estão em
-  `RobotBleIds` (`lib/services/robot_connection.dart`) e **precisam bater**
+  `RobotBleIds` (`lib/services/robotConnection.dart`) e **precisam bater**
   com os mesmos UUIDs em
   `../orquestrador/esp32/esp32_ble_bridge/esp32_ble_bridge.ino`. Mudou um
   lado, muda o outro.
@@ -64,7 +64,7 @@ arquitetura do app:
   de verdade no ESP32 via `flutter_blue_plus_linux` — útil para testar a
   lógica de conexão sem celular.
 - `permission_handler` não tem implementação para desktop (Linux/macOS/
-  Windows). `connect_screen.dart::_setUpAndScan` já guarda isso com um
+  Windows). `connectScreen.dart::_setUpAndScan` já guarda isso com um
   check de `defaultTargetPlatform` — não peça permissões fora de
   Android/iOS, vai lançar `MissingPluginException`.
 
@@ -75,7 +75,7 @@ HTTP (FastAPI), publicada num domínio pelo Cloudflare Tunnel. O contrato está
 em `../orquestrador/docs/setup-cloud.md`, e a API em `../orquestrador/cloud/api/`.
 
 - **Endereço e token** ficam em `SharedPreferences`, editáveis em
-  `ajustes_api_screen.dart`. Para um APK já configurado, use
+  `ajustesApiScreen.dart`. Para um APK já configurado, use
   `--dart-define=ATLAS_API_URL=...` e `--dart-define=ATLAS_API_TOKEN=...`.
 - **`SharedPreferences` não é cofre.** O token é legível num aparelho com root
   ou num backup. É aceitável porque ele só dá leitura da telemetria de um robô
@@ -100,7 +100,7 @@ mais lento; o APK gerado é o mesmo.
 
 ```bash
 flutter analyze   # deve estar sempre limpo
-flutter test      # test/direction_pad_test.dart, test/robot_command_test.dart
+flutter test      # test/directionPad_test.dart, test/robotCommand_test.dart
 flutter run -d linux   # roda aqui mesmo, com Bluetooth real
 flutter build apk --debug   # gera APK pra testar em Android físico
 

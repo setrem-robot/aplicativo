@@ -24,7 +24,7 @@ disso:
 | **Transporte** | BLE (Nordic UART) | HTTP (FastAPI) |
 | **Alcance** | Uns 10 metros, robô ligado | De qualquer lugar, robô desligado |
 | **Direção** | O app escreve | O app só lê |
-| **Arquivo** | `services/robot_connection.dart` | `services/telemetry_api.dart` |
+| **Arquivo** | `services/robotConnection.dart` | `services/telemetryApi.dart` |
 
 É por isso que a tela de dados sai da tela de **conexão**, e não da de controle:
 quem abre o app para ver onde o robô andou ontem não deveria precisar parear
@@ -95,9 +95,9 @@ Alguém encosta o dedo em **FRENTE**:
 
 | # | Onde | O que acontece |
 |---|---|---|
-| 1 | `widgets/direction_pad.dart` | `onTapDown` dispara. Uma vibração curta — num controle que se usa olhando para o **robô**, e não para a tela, o toque no dedo é o único retorno que chega. |
-| 2 | `screens/control_screen.dart` | Chama `robot.send(RobotCommand.forward)`. A tela não sabe o que é Bluetooth. |
-| 3 | `services/robot_connection.dart` | Monta `{"cmd":"F"}\n` e escreve na característica RX, com `withoutResponse`. |
+| 1 | `widgets/directionPad.dart` | `onTapDown` dispara. Uma vibração curta — num controle que se usa olhando para o **robô**, e não para a tela, o toque no dedo é o único retorno que chega. |
+| 2 | `screens/controlScreen.dart` | Chama `robot.send(RobotCommand.forward)`. A tela não sabe o que é Bluetooth. |
+| 3 | `services/robotConnection.dart` | Monta `{"cmd":"F"}\n` e escreve na característica RX, com `withoutResponse`. |
 | 4 | idem | **Liga um timer que repete o mesmo comando a cada 300 ms.** Esta linha é a mais importante do arquivo — ver [§5](#5-a-parte-que-precisa-estar-certa-o-robô-não-pode-sair-andando). |
 | 5 | O dedo sobe | `onTapUp` → `onRelease` → `send(RobotCommand.stop)`, que cancela o timer e manda `{"cmd":"S"}`. |
 
@@ -105,11 +105,11 @@ E o caminho de um gráfico na tela de telemetria:
 
 | # | Onde | O que acontece |
 |---|---|---|
-| 1 | `screens/telemetria_screen.dart` | A tela abre, ou alguém puxa para atualizar. **Não há polling**: os dados não chegam sozinhos. |
-| 2 | `services/telemetry_api.dart` | `GET /v1/serie/sistema?campo=cpu.uso_pct&intervalo=1h`, com `Authorization: Bearer`. O `campo` pode ser aninhado (a saúde do Pi guarda os números dentro de blocos), e a API resolve isso navegando pelo payload. Um `http.Client` só, reaproveitado — um cliente novo por requisição refaria o aperto de mão TLS toda vez. |
+| 1 | `screens/telemetriaScreen.dart` | A tela abre, ou alguém puxa para atualizar. **Não há polling**: os dados não chegam sozinhos. |
+| 2 | `services/telemetryApi.dart` | `GET /v1/serie/sistema?campo=cpu.uso_pct&intervalo=1h`, com `Authorization: Bearer`. O `campo` pode ser aninhado (a saúde do Pi guarda os números dentro de blocos), e a API resolve isso navegando pelo payload. Um `http.Client` só, reaproveitado — um cliente novo por requisição refaria o aperto de mão TLS toda vez. |
 | 3 | idem | Traduz a falha para o que a pessoa tem de conferir: “a API não respondeu a tempo”, “token recusado”, “o Android bloqueou porque o endereço é http://”. Nunca um `SocketException` cru na tela. |
 | 4 | `models/telemetria.dart` | `PontoSerie.fromJson`, **tolerante**: campo ausente ou com tipo errado vira `null`, nunca uma exceção. |
-| 5 | `widgets/grafico_serie.dart` | Desenha a linha e, abaixo dela, a leitura analítica do período: mínimo, média, máximo e variação. |
+| 5 | `widgets/graficoSerie.dart` | Desenha a linha e, abaixo dela, a leitura analítica do período: mínimo, média, máximo e variação. |
 
 ---
 
@@ -145,7 +145,7 @@ atualizam sozinhos, o que não é verdade.
   são tolerantes, e o motivo está escrito no arquivo: o payload é JSON livre, e
   um app que quebra a tela porque o GPS parou de mandar `satelites` seria pior
   que um que mostra um traço no lugar.
-- **`rota_segura.dart`** — os waypoints, a cerca e o fatiamento para o BLE. **Só
+- **`rotaSegura.dart`** — os waypoints, a cerca e o fatiamento para o BLE. **Só
   dados e regra**: não conhece mapa nem Bluetooth, e é por isso que dá para
   testá-lo sem celular e sem robô.
 
@@ -233,7 +233,7 @@ justamente quando se quer olhar o histórico.
 
 **2. Erro é texto que a pessoa entende.** `SocketException: Failed host lookup`
 diz o que aconteceu na camada de rede, não o que a pessoa tem de conferir.
-`telemetry_api.dart` traduz cada falha, e a tela de ajustes **testa antes de
+`telemetryApi.dart` traduz cada falha, e a tela de ajustes **testa antes de
 salvar** — descobrir o endereço errado só na tela do mapa, como uma lista vazia,
 manda procurar o problema no robô, que estará funcionando.
 
