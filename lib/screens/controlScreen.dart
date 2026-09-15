@@ -219,7 +219,7 @@ class _StatusCard extends StatelessWidget {
 }
 
 /// Rodape com a tabela "letra -> movimento". Serve de referencia rapida para
-/// quem for mexer no firmware do ESP32.
+/// quem for mexer no lado do robo.
 class _CommandLegend extends StatelessWidget {
   const _CommandLegend();
 

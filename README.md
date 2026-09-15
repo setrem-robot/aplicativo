@@ -33,9 +33,9 @@ casa, longe do robô, e dá para dirigir sem internet nenhuma.
 
 > **Do outro lado do BLE não há mais um ESP32.** Quem anuncia o serviço hoje é o
 > próprio Raspberry Pi, em `src/roboteye/ble/` no repositório da cara — o Pi 5
-> tem Bluetooth próprio, e a placa extra deixou de fazer sentido. Para o app não
-> mudou nada: os UUIDs e o formato da mensagem (`{"cmd":"F"}\n`) são os mesmos,
-> e o firmware do ESP32 continua funcionando como reserva.
+> tem Bluetooth próprio, e a placa extra foi removida (tudo centralizado no Pi).
+> Para o app não mudou nada: os UUIDs e o formato da mensagem (`{"cmd":"F"}\n`)
+> são os mesmos.
 >
 > Antes disso a comunicação era Bluetooth Classic (SPP), que só existe no
 > Android. A migração para BLE foi o que permitiu rodar no iOS.
@@ -106,7 +106,7 @@ Cada toque num botão envia uma linha de texto pelo Bluetooth:
 ```
 
 As letras são `F` (frente), `B` (ré), `L` (esquerda), `R` (direita) e
-`S` (parar). **O firmware do ESP32 precisa entender exatamente esse formato.**
+`S` (parar). **A ponte BLE do robô precisa entender exatamente esse formato.**
 Se você mudar o formato aqui, tem que mudar lá também.
 
 O robô anda **enquanto o dedo está pressionando** o botão. Ao soltar, o app
@@ -252,7 +252,7 @@ fala BLE de verdade por esse rádio via BlueZ — não é só uma prévia visual
 flutter run -d linux
 ```
 
-Isso conecta de fato no ESP32 físico, sem precisar de celular nenhum. É o
+Isso conecta de fato no robô físico, sem precisar de celular nenhum. É o
 jeito mais rápido de testar a lógica de conexão durante o desenvolvimento.
 Único cuidado: `permission_handler` não tem implementação para desktop —
 `connectScreen.dart` já pula o pedido de permissão fora de Android/iOS de
@@ -382,7 +382,7 @@ celulares — só reinstalando do zero.
 | o texto de um botão ou aviso | a tela correspondente em `lib/screens/` |
 | adicionar um comando novo (buzina, luz) | `lib/models/robotCommand.dart` |
 | o formato do que vai pelo Bluetooth | `lib/services/robotConnection.dart`, método `send` |
-| os UUIDs do serviço BLE | `RobotBleIds` em `robotConnection.dart` **e** `esp32BleBridge.ino` (os dois lados) |
+| os UUIDs do serviço BLE | `RobotBleIds` em `robotConnection.dart` **e** `RobotEye/src/roboteye/ble/nus.py` (os dois lados) |
 | o nome do app no celular | `android/app/src/main/AndroidManifest.xml`, atributo `android:label` |
 | o ícone do app | `android/app/src/main/res/mipmap-*/` |
 

@@ -165,7 +165,7 @@ Existe **um único** `RobotConnection` no app inteiro
 Pede as permissões do Android, verifica se o Bluetooth está ligado, lista os
 aparelhos pareados e conecta no que você tocar.
 
-Este app **não faz busca por aparelhos novos** — o ESP32 precisa ter sido
+Este app **não faz busca por aparelhos novos** — o robô precisa ter sido
 pareado antes em Configurações → Bluetooth do Android. É por isso que existe
 aquela faixa azul de aviso no rodapé da tela.
 
@@ -265,7 +265,7 @@ Ela segue a mesma regra de ouro das outras duas fontes de dados. A **tela**
 **envia** é o `RobotConnection.enviarRota` (o único que fala com o rádio), e quem
 **guarda** entre aberturas é o `RotaStore` (SharedPreferences, como o endereço da
 API). O envio é **fatiado**: cada linha BLE não pode passar de 512 bytes (limite
-do firmware do ESP32), então a rota vira uma sequência `inicio` → um `ponto` por
+da ponte BLE do robô), então a rota vira uma sequência `inicio` → um `ponto` por
 waypoint → `fim`, cada linha bem abaixo do teto. O contrato completo está em
 `../orquestrador/docs/contrato-mqtt.md`.
 
@@ -358,5 +358,6 @@ Pendências conhecidas, para decidir depois:
 - ~~`flutter_bluetooth_serial` está sem manutenção desde 2021...~~ — resolvido:
   o projeto migrou de Bluetooth Classic (SPP) para BLE, usando
   `flutter_blue_plus`. Isso também foi o que permitiu suporte a iOS (o
-  Bluetooth Classic nunca existiu lá). O firmware do ESP32 foi migrado junto
-  — veja `esp32BleBridge.ino` no repositório `orquestrador`.
+  Bluetooth Classic nunca existiu lá). Do outro lado, a ponte BLE roda no
+  próprio Pi (`RobotEye`, `src/roboteye/ble/`) — o ESP32 que a fazia foi
+  removido.

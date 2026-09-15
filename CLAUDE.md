@@ -50,9 +50,9 @@ arquitetura do app:
   entender a licença do pacote.
 - UUIDs do serviço BLE (padrão Nordic UART Service) estão em
   `RobotBleIds` (`lib/services/robotConnection.dart`) e **precisam bater**
-  com os mesmos UUIDs em
-  `../orquestrador/esp32/esp32BleBridge/esp32BleBridge.ino`. Mudou um
-  lado, muda o outro.
+  com os mesmos UUIDs na ponte BLE do robô, que roda no Pi:
+  `../RobotEye/src/roboteye/ble/nus.py`. Mudou um lado, muda o outro.
+  (O ESP32 que fazia essa ponte foi removido.)
 - BLE não usa pareamento prévio do sistema (diferente do Classic): a tela de
   conexão escaneia (`RobotConnection.scan()`), não lista pareados.
 
@@ -61,7 +61,7 @@ arquitetura do app:
 - Sem macOS/Xcode aqui — build para iPhone físico não é possível nesta
   máquina.
 - Este notebook tem Bluetooth real (BlueZ). `flutter run -d linux` conecta
-  de verdade no ESP32 via `flutter_blue_plus_linux` — útil para testar a
+  de verdade no robô via `flutter_blue_plus_linux` — útil para testar a
   lógica de conexão sem celular.
 - `permission_handler` não tem implementação para desktop (Linux/macOS/
   Windows). `connectScreen.dart::_setUpAndScan` já guarda isso com um
@@ -84,7 +84,7 @@ em `../orquestrador/docs/setup-cloud.md`, e a API em `../orquestrador/cloud/api/
 - **Mapa**: `flutter_map` + OpenStreetMap, sem chave de API e sem conta de
   faturamento. A atribuição no rodapé do mapa é exigida pela licença (ODbL) —
   não remova.
-- **Sem dados para testar?** `python3 cloud/scripts/semear-demonstracao.py`
+- **Sem dados para testar?** `python3 cloud/scripts/semearDemonstracao.py`
   no repositório do orquestrador enche o banco com um trajeto plausível.
 
 ## `kotlin.incremental=false` no `android/gradle.properties`

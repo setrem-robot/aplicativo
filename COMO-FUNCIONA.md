@@ -214,7 +214,7 @@ sequenceDiagram
     C->>R: {"tipo":"rota","acao":"fim"}
 ```
 
-**Por que fatiada:** uma linha BLE não passa de 512 bytes no firmware do ESP32.
+**Por que fatiada:** uma linha BLE não passa de 512 bytes na ponte BLE do robô.
 Cada linha da rota fica em ~65 bytes, com folga.
 
 **Por que a cerca:** ela impede desenhar uma rota que sai da área combinada. E,

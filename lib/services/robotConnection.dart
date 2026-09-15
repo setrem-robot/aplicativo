@@ -10,8 +10,9 @@ import '../models/rotaSegura.dart';
 /// Em que ponto da conexao o app esta.
 enum ConnectionStatus { disconnected, connecting, connected }
 
-/// UUIDs do servico BLE que o ESP32 expoe (padrao Nordic UART Service).
-/// Se mudar aqui, tem que mudar em `esp32_ble_bridge.ino` tambem.
+/// UUIDs do servico BLE que o robo expoe (padrao Nordic UART Service).
+/// Se mudar aqui, tem que mudar na ponte BLE do robo tambem
+/// (RobotEye, `src/roboteye/ble/nus.py`).
 class RobotBleIds {
   RobotBleIds._();
 
@@ -21,7 +22,7 @@ class RobotBleIds {
   ); // celular escreve aqui
   static final txCharacteristicUuid = Guid(
     '6e400003-b5a3-f393-e0a9-e50e24dcca9e',
-  ); // ESP32 notifica aqui
+  ); // o robo notifica aqui
 }
 
 /// Tudo que fala com o robo passa por aqui — as telas nunca conversam com o
@@ -162,7 +163,7 @@ class RobotConnection extends ChangeNotifier {
   /// motores no Raspberry Pi para os motores quando fica 1 s sem receber nada
   /// (ver `motores/vigia.py` no repositorio do orquestrador).
   ///
-  /// Payload `{"cmd":"F"}\n` -- o firmware do ESP32 espera exatamente esse
+  /// Payload `{"cmd":"F"}\n` -- a ponte BLE do robo espera exatamente esse
   /// formato; mudou aqui, muda la tambem.
   Future<void> send(RobotCommand command) async {
     _repeater?.cancel();
@@ -184,8 +185,9 @@ class RobotConnection extends ChangeNotifier {
 
   /// Escreve uma linha JSON crua na caracteristica. Devolve false se nao deu.
   ///
-  /// O `\n` final e o delimitador que o ESP32 usa para saber onde uma mensagem
-  /// termina; por isso ele entra aqui, num lugar so, e nao em cada chamador.
+  /// O `\n` final e o delimitador que a ponte BLE do robo usa para saber onde
+  /// uma mensagem termina; por isso ele entra aqui, num lugar so, e nao em cada
+  /// chamador.
   ///
   /// `withoutResponse` porque comando de direcao e sempre substituivel: o
   /// proximo ja esta a caminho, e esperar a confirmacao de cada um so

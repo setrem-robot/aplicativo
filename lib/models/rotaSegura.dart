@@ -113,8 +113,8 @@ class RotaSegura {
   /// As linhas a enviar por BLE, em ordem: `inicio`, um `ponto` por waypoint e
   /// `fim`.
   ///
-  /// É fatiado porque uma linha BLE não pode passar de 512 bytes (limite do
-  /// firmware do ESP32, `MAX_LINE`): uma rota com muitos pontos jamais caberia
+  /// É fatiado porque uma linha BLE não pode passar de 512 bytes (`MAX_LINE`,
+  /// limite da ponte BLE do robô): uma rota com muitos pontos jamais caberia
   /// numa mensagem só. Cada linha aqui fica em torno de 65 bytes, com folga de
   /// sobra. Sem o `\n` final — quem escreve no rádio o acrescenta.
   List<String> paraMensagensBle() {
