@@ -42,6 +42,43 @@ class AppColors {
 
   /// Cor do texto sobre o [brandGradient] — branco teria contraste de 1,3:1 ali.
   static const Color onBrand = background;
+
+  /// Uma cor por fonte de telemetria (`sistema`, `gps`, `bateria`, ...).
+  ///
+  /// É identidade, não estado: a mesma cor acompanha a fonte em toda parte —
+  /// o ponto do chip de filtro, o friso da linha na lista de eventos, a linha
+  /// do gráfico. É o que deixa reconhecer "isto é GPS" antes de ler o rótulo,
+  /// e o que faz dois gráficos empilhados não precisarem de legenda.
+  ///
+  /// Nenhuma delas é o verde da marca: o verde continua significando "ativo /
+  /// escolhido", e uma fonte pintada de verde pareceria sempre selecionada.
+  static Color fonte(String tipo) => _fontes[tipo] ?? textoApagado;
+
+  static const Map<String, Color> _fontes = {
+    'sistema': Color(0xFFFF7A90), // o corpo do robô: calor, esforço
+    'gps': Color(0xFF5CC8FF),
+    'bateria': Color(0xFF81C784),
+    'motores': Color(0xFFFFB74D),
+    'wifi': Color(0xFFBA68C8),
+  };
+}
+
+/// As cores do JSON no visor de eventos.
+///
+/// Quatro famílias de valor, quatro cores, e a chave em branco: é o suficiente
+/// para o olho separar "o que é campo" de "o que é valor" e achar um número
+/// no meio de um payload de trinta linhas. Mais cores que isso e o payload
+/// vira árvore de Natal — o que se procura numa depuração é a diferença, não
+/// o colorido.
+class AppJson {
+  const AppJson._();
+
+  static const Color chave = AppColors.texto;
+  static const Color texto = Color(0xFFF8C978);
+  static const Color numero = Color(0xFF7FC8FF);
+  static const Color booleano = Color(0xFFC084FC);
+  static const Color nulo = AppColors.parado;
+  static const Color pontuacao = AppColors.textoApagado;
 }
 
 /// A escala de texto do app, com um papel por estilo.
@@ -96,6 +133,18 @@ class AppText {
     fontSize: 11.5,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.2,
+  );
+
+  /// Texto de máquina: JSON, tópico MQTT, versão do build. Monoespaçado para
+  /// as colunas de um payload alinharem e para `1` e `l` não se confundirem
+  /// num token. O entrelinhas mais alto é o que deixa trinta linhas de JSON
+  /// serem lidas sem perder a linha.
+  static const TextStyle mono = TextStyle(
+    color: AppColors.texto,
+    fontFamily: 'monospace',
+    fontSize: 12.5,
+    height: 1.5,
+    fontFeatures: [FontFeature.tabularFigures()],
   );
 }
 

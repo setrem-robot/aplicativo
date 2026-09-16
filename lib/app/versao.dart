@@ -17,10 +17,10 @@ const String kAppVersao = '1.2.3+10';
 /// as mãos de quem só usa.
 const String kAppCanal = 'dev';
 
-/// O que aparece no selo: só o número, e nada mais.
+/// O texto de reserva do selo: só o número.
 ///
-/// Sem o canal, sem separador, sem ornamento. Duas tentativas anteriores de
-/// enfeitar isto — uma cápsula com borda, depois o canal antes do número — só
-/// atrapalharam. É uma informação que se confere de vez em quando, não algo
-/// que a tela precise anunciar.
+/// O canal não entra no texto de propósito — duas tentativas anteriores de
+/// pôr o canal antes do número só atrapalharam. Hoje o selo é uma pílula com
+/// um ponto de estado na frente (`seloVersao.dart`), e o canal aparece na
+/// ficha que abre ao tocar nela, junto com o build e o patch.
 String get kVersaoCurta => kAppVersao;

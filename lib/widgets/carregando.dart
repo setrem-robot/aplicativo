@@ -99,14 +99,22 @@ class _Centralizado extends StatelessWidget {
     // `ListView` e não `Center`: o "puxar para atualizar" só funciona sobre
     // algo rolável, e sem isto a tela de erro seria a única de onde não daria
     // para tentar de novo com o gesto.
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.6,
-          child: Center(child: child),
-        ),
-      ],
+    //
+    // A altura vem da caixa em que o widget foi posto, e não da tela: o
+    // histórico agora empilha um gráfico por grandeza, cada um num cartão de
+    // 300 px, e um "sem dados" centrado em 60% da tela ficaria fora do cartão.
+    return LayoutBuilder(
+      builder: (context, caixa) => ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: caixa.maxHeight.isFinite
+                ? caixa.maxHeight
+                : MediaQuery.sizeOf(context).height * 0.6,
+            child: Center(child: child),
+          ),
+        ],
+      ),
     );
   }
 }

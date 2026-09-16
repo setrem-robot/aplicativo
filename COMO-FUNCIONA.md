@@ -122,7 +122,7 @@ E o caminho de um gráfico na tela de telemetria:
 | **`ConnectScreen`** | Ao abrir o app | Escaneia por quem anuncia o serviço BLE do Atlas. É a porta de entrada para as outras duas rotas: controlar e ver dados. |
 | **`ControlScreen`** | Depois de conectar | A cruz direcional e o estado da conexão. Envolvida por um `ListenableBuilder`: quando a conexão cai sozinha, a tela se redesenha e o indicador fala a verdade. |
 | **`RotaSeguraScreen`** | Da tela de controle | Desenha waypoints num mapa OpenStreetMap, dentro de uma cerca. |
-| **`TelemetriaScreen`** | Da tela de conexão | Quatro abas: **Agora** (a saúde do Pi — temperatura, CPU por núcleo, memória, disco — mais bateria, posição, motores e rede), **Trajeto** (o mapa), **Histórico** (gráficos com análise de mín/média/máx) e **Eventos** (a lista crua). |
+| **`TelemetriaScreen`** | Da tela de conexão | Quatro abas: **Agora** (a saúde do Pi — temperatura, CPU por núcleo, memória, disco — mais bateria, posição, motores e rede), **Trajeto** (o mapa), **Histórico** (um gráfico por grandeza marcada, empilhados, com mín/média/máx) e **Eventos** (a lista crua; tocar abre o JSON como árvore). O filtro de fontes é multi-seleção, vale para Agora e Eventos ao mesmo tempo, aceita presets com nome e fica guardado. |
 | **`AjustesApiScreen`** | Da tela de telemetria | Endereço e token da API — e **testa antes de salvar**. |
 
 ### Os dois serviços

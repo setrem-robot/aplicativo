@@ -22,12 +22,18 @@ class GraficoSerie extends StatefulWidget {
     super.key,
     required this.pontos,
     required this.unidade,
+    this.cor = AppColors.primary,
     this.minimoY,
     this.maximoY,
   });
 
   final List<PontoSerie> pontos;
   final String unidade;
+
+  /// A cor da linha. Vem da fonte da grandeza (`AppColors.fonte`), para que
+  /// dois gráficos empilhados — temperatura rosa, velocidade azul — se
+  /// identifiquem sozinhos, sem legenda e sem ler o título de cada um.
+  final Color cor;
 
   /// Fixar a escala é o que torna dois gráficos comparáveis.
   ///
@@ -56,6 +62,10 @@ class _GraficoSerieState extends State<GraficoSerie> {
     final valores = pontos.map((p) => p.valor);
     final menor = widget.minimoY ?? (valores.reduce(_menor) - _folga(valores));
     final maior = widget.maximoY ?? (valores.reduce(_maior) + _folga(valores));
+    final cor = widget.cor;
+    // A ponta mais clara do degradê: a mesma cor puxada para o branco, e não
+    // uma segunda cor — é o que mantém a linha reconhecível como "a rosa".
+    final corClara = Color.lerp(cor, Colors.white, 0.3)!;
 
     return Column(
       children: [
@@ -63,6 +73,7 @@ class _GraficoSerieState extends State<GraficoSerie> {
           ponto: _tocado != null ? pontos[_tocado!] : pontos.last,
           unidade: widget.unidade,
           acompanhando: _tocado != null,
+          cor: cor,
         ),
         _TiraEstatisticas(pontos: pontos, unidade: widget.unidade),
         Expanded(
@@ -80,9 +91,7 @@ class _GraficoSerieState extends State<GraficoSerie> {
                 lineBarsData: [
                   LineChartBarData(
                     spots: amostras,
-                    gradient: const LinearGradient(
-                      colors: [AppColors.secondary, AppColors.primary],
-                    ),
+                    gradient: LinearGradient(colors: [corClara, cor]),
                     barWidth: 2.5,
                     // Curva suave, e não reta entre pontos: os valores já são
                     // médias de uma faixa de tempo, então a linha entre duas
@@ -98,8 +107,8 @@ class _GraficoSerieState extends State<GraficoSerie> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppColors.primary.withValues(alpha: 0.22),
-                          AppColors.primary.withValues(alpha: 0.0),
+                          cor.withValues(alpha: 0.22),
+                          cor.withValues(alpha: 0.0),
                         ],
                       ),
                     ),
@@ -138,13 +147,26 @@ class _GraficoSerieState extends State<GraficoSerie> {
                       // Quatro marcas no eixo: mais que isso e os rótulos de
                       // hora encostam uns nos outros numa tela de celular.
                       interval: _intervaloDoEixo(amostras),
-                      getTitlesWidget: (valor, meta) => Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                          _hora(DateTime.fromMillisecondsSinceEpoch(valor.toInt())),
-                          style: const TextStyle(color: AppColors.textoApagado, fontSize: 10),
-                        ),
-                      ),
+                      // O `fl_chart` desenha as marcas nos múltiplos do
+                      // intervalo e, por cima, nas duas pontas. A da esquerda
+                      // sai: ela caía a milímetros do primeiro múltiplo e as
+                      // duas horas se sobrepunham ("1414:0048"). A da direita
+                      // fica — é a hora mais recente, a que mais se lê.
+                      minIncluded: false,
+                      getTitlesWidget: (valor, meta) {
+                        // Um múltiplo colado na ponta direita também sairia
+                        // por cima da hora final; some quando está a menos de
+                        // um décimo da janela dela.
+                        final perto = (meta.max - valor).abs() < (meta.max - meta.min) * 0.1;
+                        if (perto && valor != meta.max) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            _hora(DateTime.fromMillisecondsSinceEpoch(valor.toInt())),
+                            style: const TextStyle(color: AppColors.textoApagado, fontSize: 10),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -167,7 +189,7 @@ class _GraficoSerieState extends State<GraficoSerie> {
                           getDotPainter: (spot, __, ___, ____) =>
                               FlDotCirclePainter(
                             radius: 4,
-                            color: AppColors.secondary,
+                            color: corClara,
                             strokeColor: AppColors.background,
                             strokeWidth: 2,
                           ),
@@ -198,11 +220,13 @@ class _Leitura extends StatelessWidget {
     required this.ponto,
     required this.unidade,
     required this.acompanhando,
+    required this.cor,
   });
 
   final PontoSerie ponto;
   final String unidade;
   final bool acompanhando;
+  final Color cor;
 
   @override
   Widget build(BuildContext context) {
@@ -235,7 +259,7 @@ class _Leitura extends StatelessWidget {
               Text(
                 _hora(ponto.instante),
                 style: TextStyle(
-                  color: acompanhando ? AppColors.secondary : AppColors.textoFraco,
+                  color: acompanhando ? cor : AppColors.textoFraco,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   fontFeatures: const [FontFeature.tabularFigures()],

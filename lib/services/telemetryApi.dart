@@ -159,6 +159,32 @@ class TelemetryApi {
     return _lista(json['eventos'], EventoTelemetria.fromJson);
   }
 
+  /// Os eventos de várias fontes de uma vez, mais recentes primeiro.
+  ///
+  /// A API filtra por **um** `tipo` por pedido. Com duas ou mais fontes
+  /// marcadas, pedir "todos" e peneirar aqui daria errado de um jeito
+  /// silencioso: o `sistema` publica a cada poucos segundos e tomaria as
+  /// duzentas vagas do limite, e "GPS + Pi" voltaria sem nenhum GPS. Então é
+  /// um pedido por fonte, em paralelo, e a junção ordenada por instante —
+  /// cada fonte fica com a sua cota.
+  ///
+  /// [tipos] vazio pede tudo, num pedido só.
+  Future<List<EventoTelemetria>> eventosDasFontes({
+    required Iterable<String> tipos,
+    int limitePorFonte = 100,
+  }) async {
+    final lista = tipos.toList();
+    if (lista.isEmpty) return eventos(limite: limitePorFonte * 2);
+    if (lista.length == 1) return eventos(tipo: lista.single, limite: limitePorFonte * 2);
+
+    final respostas = await Future.wait([
+      for (final tipo in lista) eventos(tipo: tipo, limite: limitePorFonte),
+    ]);
+    final juntos = [for (final resposta in respostas) ...resposta];
+    juntos.sort((a, b) => b.instante.compareTo(a.instante));
+    return juntos;
+  }
+
   // -- encanamento ---------------------------------------------------------
 
   /// Converte a lista crua do JSON, descartando o que não deu para ler.

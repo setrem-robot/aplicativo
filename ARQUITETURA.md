@@ -21,11 +21,13 @@ lib/
 ├── models/
 │   ├── robotCommand.dart       ③ os comandos que o robô entende
 │   ├── telemetria.dart          ⑧ o que a API devolve, em objetos
+│   ├── filtro.dart              ⑮ as fontes, as grandezas e os filtros com nome
 │   └── rotaSegura.dart         ⑭ a rota segura: waypoints + cerca
 │
 ├── services/
 │   ├── robotConnection.dart    ④ o Bluetooth — o cérebro do app
 │   ├── telemetryApi.dart       ⑨ o HTTP — a outra metade dos dados
+│   ├── filtroStore.dart        ⑮ o filtro da tela de dados, guardado
 │   └── rotaStore.dart          ⑭ guarda a rota entre aberturas
 │
 ├── screens/
@@ -44,7 +46,10 @@ lib/
     ├── painelEstado.dart       ⑬ as quatro abas da telemetria
     ├── mapaTrajeto.dart
     ├── graficoSerie.dart
-    └── listaEventos.dart
+    ├── listaEventos.dart
+    ├── barraFiltro.dart        ⑮ os chips que somam, e os presets
+    ├── visorJson.dart          ⑮ o payload como árvore recolhível
+    └── seloVersao.dart          a pílula de versão do rodapé
 ```
 
 ### A regra que organiza tudo
@@ -230,15 +235,49 @@ que um que mostra um traço.
 | **Histórico** | como isso mudou? gráfico de temperatura, CPU, memória, bateria, tensão, velocidade ou satélites, com a análise do período (mínimo, média, máximo, variação) abaixo da linha |
 | **Eventos** | o que exatamente chegou? as mensagens cruas, com o JSON completo |
 
-A aba de eventos é a mais feia e a que mais salva uma depuração em campo: as
-outras três interpretam o dado, e quando é a interpretação que está errada, só
-o valor cru resolve.
+A aba de eventos é a que mais salva uma depuração em campo: as outras três
+interpretam o dado, e quando é a interpretação que está errada, só o valor cru
+resolve. Tocar numa linha abre o payload no `visorJson.dart` — uma árvore em
+que cada bloco recolhe, cada família de valor tem uma cor, e segurar numa linha
+copia `caminho = valor`.
+
+**O filtro é um só, e soma.** Os chips de fonte (Pi, bateria, GPS, motores,
+rede) são multi-seleção: "só Pi e GPS" é dois toques, e vale ao mesmo tempo
+para os cartões da aba Agora e para a lista de Eventos. Segurar num chip deixa
+só ele. Um conjunto de fontes ganha nome ("Pi + GPS") e vira um chip de
+preset; até seis. No Histórico, os chips escolhem **quais grandezas plotar**, e
+cada uma vira um gráfico empilhado — temperatura e velocidade uma embaixo da
+outra, no mesmo eixo de tempo. Tudo isso mora no `FiltroStore` (⑮) e sobrevive
+ao app fechar.
 
 **Nenhum número aparece sem a idade dele.** Um painel que mostra "bateria 83%"
 com a mesma cara para um dado de agora e para um de anteontem é pior que um
 painel vazio — ele faz alguém confiar num robô que está desligado há dois dias.
 E a idade vem calculada da API, não do relógio do celular, que pode estar
 errado.
+
+### ⑮ `filtro.dart`, `filtroStore.dart` e `barraFiltro.dart` — o filtro
+
+Três arquivos para uma coisa só, e a divisão é a mesma regra de sempre:
+
+- **`models/filtro.dart`** sabe o que existe para escolher — o enum `Fonte`
+  (os `tipo` da telemetria), as `Grandeza`s plotáveis com escala, e o
+  `PresetFiltro` com `toJson`/`fromJson` tolerantes. Não sabe de tela nem de
+  disco.
+- **`services/filtroStore.dart`** guarda a escolha. É um `ChangeNotifier`
+  singleton porque duas abas olham para o mesmo filtro; persiste em
+  `SharedPreferences` como o `TelemetryApi` persiste o endereço. Um valor
+  guardado por uma versão antiga do app vira o padrão, nunca uma exceção — e
+  cada chave é lida por conta própria, para um preset corrompido não levar as
+  fontes junto.
+- **`widgets/barraFiltro.dart`** desenha. O `ChipFiltro` é feito à mão em vez
+  do `FilterChip` do Material porque o chip aceso pega a **cor da fonte**
+  (`AppColors.fonte`), e o Material só sabe pintar de uma cor para todos.
+
+A cor da fonte é identidade, não estado: a mesma cor acompanha a fonte no
+chip, no friso da linha de evento, no cabeçalho do visor e na linha do gráfico.
+É o que faz dois gráficos empilhados dispensarem legenda. Nenhuma delas é o
+verde da marca, que continua significando "ativo".
 
 ### ⑫ `carregando.dart` — o ciclo repetido quatro vezes
 
@@ -294,6 +333,8 @@ flutter test
 | `test/directionPad_test.dart` | apertar move, soltar para, desconectado não responde |
 | `test/telemetria_test.dart` | payload torto não derruba a tela, e a idade vem da API |
 | `test/rotaSegura_test.dart` | ponto fora da cerca é recusado, e a rota fatiada cabe no limite BLE |
+| `test/filtro_test.dart` | os chips somam, um preset guardado volta igual, e um guardado ilegível vira o padrão |
+| `test/visorJson_test.dart` | cada família de valor do JSON ganha a sua cor, e o resumo do `sistema` lê os campos certos |
 
 São poucos e rápidos, e cobrem justamente as regras que, se quebrarem, fazem
 o robô se comportar mal de um jeito difícil de perceber olhando a tela.

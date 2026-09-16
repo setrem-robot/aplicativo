@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
+import '../models/filtro.dart';
 import '../models/telemetria.dart';
+import '../services/filtroStore.dart';
 import '../services/telemetryApi.dart';
+import '../widgets/barraFiltro.dart';
 import '../widgets/carregando.dart';
 import '../widgets/graficoSerie.dart';
 import '../widgets/listaEventos.dart';
@@ -17,6 +20,9 @@ import 'ajustesApiScreen.dart';
 /// isso que ela é alcançada da tela de conexão, e não da de controle — quem
 /// abre o app para ver onde o robô andou ontem não deveria precisar parear
 /// nada antes.
+///
+/// O filtro é um só para a tela (`FiltroStore`): as fontes marcadas valem na
+/// aba Agora e na aba Eventos ao mesmo tempo, e sobrevivem ao app fechar.
 class TelemetriaScreen extends StatefulWidget {
   const TelemetriaScreen({super.key});
 
@@ -35,7 +41,13 @@ class _TelemetriaScreenState extends State<TelemetriaScreen> {
   }
 
   Future<void> _verificarConfiguracao() async {
-    await TelemetryApi.instance.carregar();
+    // O filtro guardado é lido junto com a configuração, antes de qualquer
+    // aba montar: senão a primeira consulta sairia com "todas" e a tela
+    // trocaria de conteúdo um instante depois, quando o filtro chegasse.
+    await Future.wait([
+      TelemetryApi.instance.carregar(),
+      FiltroStore.instance.carregar(),
+    ]);
     if (!mounted) return;
     setState(() {
       _configurado = TelemetryApi.instance.configurado;
@@ -76,6 +88,7 @@ class _TelemetriaScreenState extends State<TelemetriaScreen> {
         appBar: AppBar(
           title: const Text('Dados do robô'),
           backgroundColor: AppColors.background,
+          scrolledUnderElevation: 0,
           actions: [
             IconButton(
               icon: const Icon(Icons.settings_rounded),
@@ -83,25 +96,83 @@ class _TelemetriaScreenState extends State<TelemetriaScreen> {
               onPressed: _abrirAjustes,
             ),
           ],
-          bottom: const TabBar(
-            indicatorColor: AppColors.primary,
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textoApagado,
-            // Rolável porque quatro rótulos com texto não cabem lado a lado
-            // num celular estreito — sem isto, o Flutter os espreme até virarem
-            // reticências.
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            tabs: [
-              Tab(icon: Icon(Icons.dashboard_rounded), text: 'Agora'),
-              Tab(icon: Icon(Icons.map_rounded), text: 'Trajeto'),
-              Tab(icon: Icon(Icons.show_chart_rounded), text: 'Histórico'),
-              Tab(icon: Icon(Icons.list_alt_rounded), text: 'Eventos'),
-            ],
+          bottom: const PreferredSize(
+            preferredSize: Size.fromHeight(48),
+            child: _Abas(),
           ),
         ),
         body: const TabBarView(
           children: [_AbaAgora(), _AbaTrajeto(), _AbaHistorico(), _AbaEventos()],
+        ),
+      ),
+    );
+  }
+}
+
+/// As quatro abas, como uma fileira de pílulas.
+///
+/// A `TabBar` do Material sublinha a aba ativa; aqui ela ganha um fundo — a
+/// mesma pílula dos chips de filtro logo abaixo, para a tela inteira falar uma
+/// língua só. Rolável porque quatro rótulos com ícone não cabem lado a lado
+/// num celular estreito: sem isto, o Flutter os espreme até virarem
+/// reticências.
+class _Abas extends StatelessWidget {
+  const _Abas();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TabBar(
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        padding: const EdgeInsets.fromLTRB(AppSpacing.medium, 0, AppSpacing.medium, 8),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+        dividerColor: Colors.transparent,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicator: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+        ),
+        // Sem o brilho do Material ao tocar: a pílula já responde mudando de
+        // lugar, e o círculo cinza por cima dela parecia defeito.
+        splashFactory: NoSplash.splashFactory,
+        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+        labelColor: AppColors.texto,
+        unselectedLabelColor: AppColors.textoApagado,
+        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        tabs: const [
+          _Aba(icone: Icons.dashboard_rounded, rotulo: 'Agora'),
+          _Aba(icone: Icons.map_rounded, rotulo: 'Trajeto'),
+          _Aba(icone: Icons.show_chart_rounded, rotulo: 'Histórico'),
+          _Aba(icone: Icons.list_alt_rounded, rotulo: 'Eventos'),
+        ],
+      ),
+    );
+  }
+}
+
+class _Aba extends StatelessWidget {
+  const _Aba({required this.icone, required this.rotulo});
+
+  final IconData icone;
+  final String rotulo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tab(
+      height: 36,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icone, size: 15),
+            const SizedBox(width: 6),
+            Text(rotulo),
+          ],
         ),
       ),
     );
@@ -159,16 +230,30 @@ class _AbaAgora extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Carregando<EstadoRobo>(
-      buscar: TelemetryApi.instance.estado,
-      vazio: (_) => const SemDados(
-        mensagem: 'Nenhuma telemetria ainda',
-        detalhe: 'O robô grava aqui quando estiver ligado e com rede. '
-            'Para ver as telas antes disso, rode o semear-demonstracao.py na VM.',
-      ),
-      construir: (context, estado) => estado.vazio
-          ? const SemDados(mensagem: 'Nenhuma telemetria ainda')
-          : PainelEstado(estado: estado),
+    final filtro = FiltroStore.instance;
+    return Column(
+      children: [
+        BarraFontes(filtro: filtro),
+        Expanded(
+          child: Carregando<EstadoRobo>(
+            buscar: TelemetryApi.instance.estado,
+            vazio: (_) => const SemDados(
+              mensagem: 'Nenhuma telemetria ainda',
+              detalhe: 'O robô grava aqui quando estiver ligado e com rede. '
+                  'Para ver as telas antes disso, rode o semear-demonstracao.py na VM.',
+            ),
+            // O filtro só esconde cartões; não refaz a consulta. O estado já
+            // veio inteiro da API, e trocar de fonte é instantâneo.
+            construir: (context, estado) => estado.vazio
+                ? const SemDados(mensagem: 'Nenhuma telemetria ainda')
+                : AnimatedBuilder(
+                    animation: filtro,
+                    builder: (context, _) =>
+                        PainelEstado(estado: estado, fontes: filtro.fontes),
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -192,94 +277,6 @@ class _AbaTrajeto extends StatelessWidget {
   }
 }
 
-/// O que dá para ver em gráfico, e com que escala.
-///
-/// A escala fixa da bateria (0 a 100) não é detalhe: sem ela, uma variação de
-/// 82% a 84% ocuparia a altura inteira do gráfico e pareceria um tombo.
-class _Grandeza {
-  const _Grandeza({
-    required this.rotulo,
-    required this.grupo,
-    required this.tipo,
-    required this.campo,
-    required this.unidade,
-    this.minimo,
-    this.maximo,
-  });
-
-  final String rotulo;
-
-  /// A que assunto a grandeza pertence ("Raspberry Pi", "Energia", "Posição").
-  /// Serve de rótulo do grupo na barra de filtros, para a lista de chips não
-  /// virar uma fileira solta de sete nomes sem hierarquia.
-  final String grupo;
-  final String tipo;
-  final String campo;
-  final String unidade;
-  final double? minimo;
-  final double? maximo;
-}
-
-/// As grandezas que dá para plotar, agrupadas por assunto.
-///
-/// A saúde do Pi entrou aqui junto: o campo pode ser aninhado (`cpu.uso_pct`),
-/// que a API resolve navegando pelo payload. Sem isso, o histórico do robô
-/// pararia na bateria e no GPS — e a pergunta "ele passou calor ontem?" não
-/// teria resposta no app, só no monitor.
-const _grandezas = [
-  _Grandeza(
-    rotulo: 'Temperatura',
-    grupo: 'Raspberry Pi',
-    tipo: 'sistema',
-    campo: 'temperatura_c',
-    unidade: '°C',
-  ),
-  _Grandeza(
-    rotulo: 'CPU',
-    grupo: 'Raspberry Pi',
-    tipo: 'sistema',
-    campo: 'cpu.uso_pct',
-    unidade: '%',
-    minimo: 0,
-    maximo: 100,
-  ),
-  _Grandeza(
-    rotulo: 'Memória',
-    grupo: 'Raspberry Pi',
-    tipo: 'sistema',
-    campo: 'memoria.uso_pct',
-    unidade: '%',
-    minimo: 0,
-    maximo: 100,
-  ),
-  _Grandeza(
-    rotulo: 'Bateria',
-    grupo: 'Energia',
-    tipo: 'bateria',
-    campo: 'percentual',
-    unidade: '%',
-    minimo: 0,
-    maximo: 100,
-  ),
-  _Grandeza(rotulo: 'Tensão', grupo: 'Energia', tipo: 'bateria', campo: 'tensao_v', unidade: 'V'),
-  _Grandeza(
-    rotulo: 'Velocidade',
-    grupo: 'Posição',
-    tipo: 'gps',
-    campo: 'velocidade_kmh',
-    unidade: 'km/h',
-    minimo: 0,
-  ),
-  _Grandeza(
-    rotulo: 'Satélites',
-    grupo: 'Posição',
-    tipo: 'gps',
-    campo: 'satelites',
-    unidade: '',
-    minimo: 0,
-  ),
-];
-
 /// Janelas que fazem sentido num celular, com o passo de agregação de cada uma.
 ///
 /// O passo acompanha a janela de propósito: 24 horas em passos de 1 minuto
@@ -291,51 +288,67 @@ const _janelas = {
   '30 d': (Duration(days: 30), '6h'),
 };
 
-class _AbaHistorico extends StatefulWidget {
+/// Um gráfico por grandeza marcada, empilhados.
+///
+/// Uma grandeza só ocupa a aba inteira, como antes. Duas ou mais viram uma
+/// coluna de cartões de altura fixa: é o que deixa ver temperatura e
+/// velocidade **uma embaixo da outra**, no mesmo eixo de tempo, e perguntar
+/// "ele esquentou quando andou?" — a pergunta que um gráfico de cada vez não
+/// responde.
+class _AbaHistorico extends StatelessWidget {
   const _AbaHistorico();
 
-  @override
-  State<_AbaHistorico> createState() => _AbaHistoricoState();
-}
-
-class _AbaHistoricoState extends State<_AbaHistorico> {
-  _Grandeza _grandeza = _grandezas.first;
-  String _janela = '24 h';
+  /// Altura de cada cartão quando há mais de um. Cabe a leitura, as quatro
+  /// estatísticas e uma linha com espaço para respirar; dois cartões cabem
+  /// numa tela de celular sem rolar.
+  static const double _alturaCartao = 300;
 
   @override
   Widget build(BuildContext context) {
-    final (duracao, intervalo) = _janelas[_janela]!;
-
+    final filtro = FiltroStore.instance;
     return Column(
       children: [
-        _Filtros(
-          grandeza: _grandeza,
-          janela: _janela,
-          aoTrocarGrandeza: (nova) => setState(() => _grandeza = nova),
-          aoTrocarJanela: (nova) => setState(() => _janela = nova),
-        ),
+        BarraGrandezas(filtro: filtro, janelas: _janelas.keys.toList()),
         Expanded(
-          child: Carregando<List<PontoSerie>>(
-            // A chave força um estado novo quando o filtro muda; sem ela o
-            // `Carregando` guardaria o Future antigo e o gráfico não mudaria.
-            key: ValueKey('${_grandeza.tipo}.${_grandeza.campo}|$_janela'),
-            buscar: () => TelemetryApi.instance.serie(
-              tipo: _grandeza.tipo,
-              campo: _grandeza.campo,
-              intervalo: intervalo,
-              desde: DateTime.now().subtract(duracao),
-            ),
-            vazio: (_) => SemDados(
-              mensagem: 'Sem ${_grandeza.rotulo.toLowerCase()} nesse período',
-              detalhe: 'Tente uma janela maior, ou confira se o robô estava '
-                  'ligado e publicando.',
-            ),
-            construir: (context, pontos) => GraficoSerie(
-              pontos: pontos,
-              unidade: _grandeza.unidade,
-              minimoY: _grandeza.minimo,
-              maximoY: _grandeza.maximo,
-            ),
+          child: AnimatedBuilder(
+            animation: filtro,
+            builder: (context, _) {
+              final grandezas = filtro.grandezas;
+              final (duracao, intervalo) = _janelas[filtro.janela] ?? _janelas.values.first;
+              return LayoutBuilder(
+                builder: (context, caixa) {
+                  final unico = grandezas.length == 1;
+                  return ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.medium,
+                      AppSpacing.small,
+                      AppSpacing.medium,
+                      AppSpacing.large * 2,
+                    ),
+                    itemCount: grandezas.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, i) => SizedBox(
+                      // Um só: toda a altura disponível, descontada a margem
+                      // (e nunca menos que um cartão, se a caixa for apertada).
+                      height: unico
+                          ? (caixa.maxHeight - AppSpacing.small - AppSpacing.large * 2)
+                              .clamp(_alturaCartao, double.infinity)
+                          : _alturaCartao,
+                      child: _CartaoGrafico(
+                        // A chave é o que faz cada cartão manter o próprio
+                        // Future quando um vizinho entra ou sai da lista.
+                        key: ValueKey(grandezas[i].id),
+                        grandeza: grandezas[i],
+                        janela: filtro.janela,
+                        duracao: duracao,
+                        intervalo: intervalo,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
       ],
@@ -343,84 +356,84 @@ class _AbaHistoricoState extends State<_AbaHistorico> {
   }
 }
 
-class _Filtros extends StatelessWidget {
-  const _Filtros({
+/// O cartão de uma grandeza: o nome com a cor da fonte, e o gráfico dentro.
+class _CartaoGrafico extends StatelessWidget {
+  const _CartaoGrafico({
+    super.key,
     required this.grandeza,
     required this.janela,
-    required this.aoTrocarGrandeza,
-    required this.aoTrocarJanela,
+    required this.duracao,
+    required this.intervalo,
   });
 
-  final _Grandeza grandeza;
+  final Grandeza grandeza;
   final String janela;
-  final ValueChanged<_Grandeza> aoTrocarGrandeza;
-  final ValueChanged<String> aoTrocarJanela;
+  final Duration duracao;
+  final String intervalo;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.medium),
+    final cor = AppColors.fonte(grandeza.fonte.tipo);
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.surfaceAlta, AppColors.surface],
+        ),
+        borderRadius: BorderRadius.circular(AppSpacing.radius),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.large, 14, AppSpacing.large, 0),
             child: Row(
               children: [
-                for (var i = 0; i < _grandezas.length; i++) ...[
-                  // Rótulo do grupo antes do primeiro chip dele: dá hierarquia
-                  // à fileira, para sete nomes não virarem uma lista solta.
-                  if (i == 0 || _grandezas[i].grupo != _grandezas[i - 1].grupo)
-                    Padding(
-                      padding: EdgeInsets.only(
-                        left: i == 0 ? 0 : AppSpacing.small,
-                        right: AppSpacing.small,
-                      ),
-                      child: Text(
-                        _grandezas[i].grupo.toUpperCase(),
-                        style: AppText.meta.copyWith(
-                          fontSize: 10,
-                          letterSpacing: 0.8,
-                          color: AppColors.textoApagado,
-                        ),
-                      ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.small),
-                    child: ChoiceChip(
-                      label: Text(_grandezas[i].rotulo),
-                      selected: _grandezas[i].campo == grandeza.campo &&
-                          _grandezas[i].tipo == grandeza.tipo,
-                      onSelected: (_) => aoTrocarGrandeza(_grandezas[i]),
-                      selectedColor: AppColors.primary,
-                      labelStyle: TextStyle(
-                        color: _grandezas[i].campo == grandeza.campo &&
-                                _grandezas[i].tipo == grandeza.tipo
-                            ? AppColors.onBrand
-                            : Colors.white70,
-                      ),
-                      backgroundColor: AppColors.surface,
-                      side: BorderSide.none,
-                    ),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: cor,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: cor.withValues(alpha: 0.6), blurRadius: 6)],
                   ),
-                ],
+                ),
+                const SizedBox(width: 8),
+                Text(grandeza.rotulo.toUpperCase(), style: AppText.sobrancelha),
+                const Spacer(),
+                Text(
+                  '${grandeza.fonte.rotulo} · $janela',
+                  style: AppText.meta,
+                ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.small),
-          SegmentedButton<String>(
-            segments: [
-              for (final nome in _janelas.keys)
-                ButtonSegment(value: nome, label: Text(nome)),
-            ],
-            selected: {janela},
-            onSelectionChanged: (escolha) => aoTrocarJanela(escolha.first),
-            showSelectedIcon: false,
-            style: SegmentedButton.styleFrom(
-              backgroundColor: AppColors.surface,
-              foregroundColor: Colors.white70,
-              selectedBackgroundColor: AppColors.primary,
-              selectedForegroundColor: AppColors.onBrand,
-              side: BorderSide.none,
+          Expanded(
+            child: Carregando<List<PontoSerie>>(
+              // A chave força um estado novo quando a janela muda; sem ela o
+              // `Carregando` guardaria o Future antigo e o gráfico não mudaria.
+              key: ValueKey('${grandeza.id}|$janela'),
+              buscar: () => TelemetryApi.instance.serie(
+                tipo: grandeza.fonte.tipo,
+                campo: grandeza.campo,
+                intervalo: intervalo,
+                desde: DateTime.now().subtract(duracao),
+              ),
+              vazio: (_) => SemDados(
+                mensagem: 'Sem ${grandeza.rotulo.toLowerCase()} nesse período',
+                detalhe: 'Tente uma janela maior, ou confira se o robô estava '
+                    'ligado e publicando.',
+              ),
+              construir: (context, pontos) => GraficoSerie(
+                pontos: pontos,
+                unidade: grandeza.unidade,
+                cor: cor,
+                minimoY: grandeza.minimo,
+                maximoY: grandeza.maximo,
+              ),
             ),
           ),
         ],
@@ -429,51 +442,36 @@ class _Filtros extends StatelessWidget {
   }
 }
 
-class _AbaEventos extends StatefulWidget {
+class _AbaEventos extends StatelessWidget {
   const _AbaEventos();
 
   @override
-  State<_AbaEventos> createState() => _AbaEventosState();
-}
-
-class _AbaEventosState extends State<_AbaEventos> {
-  String? _tipo;
-
-  static const _tipos = [null, 'sistema', 'gps', 'bateria', 'motores', 'wifi'];
-
-  @override
   Widget build(BuildContext context) {
+    final filtro = FiltroStore.instance;
     return Column(
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.all(AppSpacing.medium),
-          child: Row(
-            children: [
-              for (final opcao in _tipos)
-                Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.small),
-                  child: ChoiceChip(
-                    label: Text(opcao ?? 'todos'),
-                    selected: opcao == _tipo,
-                    onSelected: (_) => setState(() => _tipo = opcao),
-                    selectedColor: AppColors.primary,
-                    labelStyle: TextStyle(
-                      color: opcao == _tipo ? AppColors.onBrand : Colors.white70,
-                    ),
-                    backgroundColor: AppColors.surface,
-                    side: BorderSide.none,
-                  ),
-                ),
-            ],
-          ),
-        ),
+        BarraFontes(filtro: filtro),
         Expanded(
-          child: Carregando<List<EventoTelemetria>>(
-            key: ValueKey(_tipo ?? 'todos'),
-            buscar: () => TelemetryApi.instance.eventos(tipo: _tipo, limite: 200),
-            vazio: (_) => const SemDados(mensagem: 'Nenhum evento registrado'),
-            construir: (context, eventos) => ListaEventos(eventos: eventos),
+          child: AnimatedBuilder(
+            animation: filtro,
+            builder: (context, _) {
+              final tipos = filtro.todasAsFontes
+                  ? const <String>[]
+                  : [for (final f in filtro.fontes) f.tipo];
+              return Carregando<List<EventoTelemetria>>(
+                // A chave é o conjunto de fontes: mudou o filtro, nova consulta.
+                key: ValueKey(tipos.join(',')),
+                buscar: () => TelemetryApi.instance.eventosDasFontes(tipos: tipos),
+                vazio: (_) => SemDados(
+                  mensagem: 'Nenhum evento registrado',
+                  detalhe: tipos.isEmpty
+                      ? null
+                      : 'Nada dessas fontes nos últimos 90 dias. Marque "todas" '
+                          'para conferir se o robô publicou alguma coisa.',
+                ),
+                construir: (context, eventos) => ListaEventos(eventos: eventos),
+              );
+            },
           ),
         ),
       ],

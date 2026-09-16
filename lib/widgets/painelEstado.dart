@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
+import '../models/filtro.dart';
 import '../models/telemetria.dart';
 import 'frescor.dart';
 
@@ -15,10 +16,19 @@ import 'frescor.dart';
 /// pega a cor, o brilho e o pulso do [Frescor] da leitura dele: o que está
 /// chegando respira em verde, o que envelheceu recua para um cinza frio. Dá
 /// para ler o painel inteiro sem ler uma palavra.
+///
+/// [fontes] diz quais cartões desenhar. É o mesmo filtro da aba de eventos:
+/// quem está depurando o GPS marca "GPS" uma vez e vê só o cartão dele aqui e
+/// só as mensagens dele lá.
 class PainelEstado extends StatefulWidget {
-  const PainelEstado({super.key, required this.estado});
+  const PainelEstado({
+    super.key,
+    required this.estado,
+    this.fontes = const {...Fonte.values},
+  });
 
   final EstadoRobo estado;
+  final Set<Fonte> fontes;
 
   @override
   State<PainelEstado> createState() => _PainelEstadoState();
@@ -40,15 +50,16 @@ class _PainelEstadoState extends State<PainelEstado>
   @override
   Widget build(BuildContext context) {
     final estado = widget.estado;
+    final fontes = widget.fontes;
     final blocos = <Widget>[
       _Cabecalho(estado: estado),
       // A saúde do Pi vem primeiro: é a única leitura sempre real (os outros
       // tipos ainda podem chegar semeados) e é o "corpo" do robô.
-      _CartaoSistema(leitura: estado.sistema),
-      _CartaoBateria(leitura: estado.bateria),
-      _CartaoPosicao(leitura: estado.gps),
-      _CartaoMotores(leitura: estado.motores),
-      _CartaoRede(leitura: estado.wifi),
+      if (fontes.contains(Fonte.sistema)) _CartaoSistema(leitura: estado.sistema),
+      if (fontes.contains(Fonte.bateria)) _CartaoBateria(leitura: estado.bateria),
+      if (fontes.contains(Fonte.gps)) _CartaoPosicao(leitura: estado.gps),
+      if (fontes.contains(Fonte.motores)) _CartaoMotores(leitura: estado.motores),
+      if (fontes.contains(Fonte.wifi)) _CartaoRede(leitura: estado.wifi),
     ];
 
     return ListView.separated(
