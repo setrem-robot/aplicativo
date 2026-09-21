@@ -231,46 +231,35 @@ class _IaSwitchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Sem nenhum Icon aqui, de proposito: manter o card livre de glyphs novos
+    // na fonte para o switch chegar por patch OTA (ver iaModo.dart).
+    final naNuvem = robot.iaModo == IaModo.nuvem;
+
     return AppCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              // Icone ja embutido (ver iaModo.dart): manter o patch OTA.
-              Icon(Icons.smart_toy_rounded,
-                  color: AppColors.primary, size: 16),
-              SizedBox(width: 6),
-              Text(
-                'INTELIGENCIA',
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 10,
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ],
+          const Text(
+            'INTELIGENCIA',
+            style: TextStyle(
+              color: Colors.white38,
+              fontSize: 10,
+              letterSpacing: 1.5,
+            ),
           ),
           const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<IaModo>(
-              // Montado a partir do proprio enum: um modo novo aparece aqui
-              // sozinho.
-              segments: IaModo.values
-                  .map(
-                    (modo) => ButtonSegment<IaModo>(
-                      value: modo,
-                      icon: Icon(modo.icon, size: 18),
-                      label: Text(modo.label),
-                    ),
-                  )
-                  .toList(),
-              selected: {robot.iaModo},
-              onSelectionChanged: (selecao) => robot.setIaModo(selecao.first),
-              showSelectedIcon: false,
-            ),
+          Row(
+            children: [
+              _RotuloIa(texto: IaModo.local.label, ativo: !naNuvem),
+              Switch(
+                value: naNuvem,
+                onChanged: (nuvem) =>
+                    robot.setIaModo(nuvem ? IaModo.nuvem : IaModo.local),
+                activeThumbColor: AppColors.primary,
+              ),
+              _RotuloIa(texto: IaModo.nuvem.label, ativo: naNuvem),
+            ],
           ),
           const SizedBox(height: 8),
           // A descricao muda com a escolha; o switcher dissolve o texto em vez
@@ -285,6 +274,28 @@ class _IaSwitchCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Um dos dois rotulos ("IA Local" / "IA Nuvem") ao lado do interruptor. O
+/// lado ativo acende; o outro fica apagado.
+class _RotuloIa extends StatelessWidget {
+  const _RotuloIa({required this.texto, required this.ativo});
+
+  final String texto;
+  final bool ativo;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedDefaultTextStyle(
+      duration: AppDurations.swap,
+      style: TextStyle(
+        color: ativo ? AppColors.primary : Colors.white38,
+        fontSize: 12,
+        fontWeight: ativo ? FontWeight.w700 : FontWeight.w500,
+      ),
+      child: Text(texto),
     );
   }
 }
