@@ -10,7 +10,7 @@
 /// pubspec.yaml — ele só aparece se o plugin nativo não responder.
 library;
 
-const String kAppVersao = '1.2.3+10';
+const String kAppVersao = '1.2.4+11';
 
 /// Canal do build. `dev` enquanto o app está em desenvolvimento — é o que
 /// justifica o selo de versão à vista. Vira `estável` (ou some) quando for para
