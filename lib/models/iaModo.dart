@@ -17,13 +17,15 @@ enum IaModo {
     'nuvem',
     'IA Nuvem',
     'Modelo maior na rede, com queda automatica para a local',
-    Icons.cloud_rounded,
+    // Icone ja embutido no app: um icone novo mudaria a fonte MaterialIcons
+    // (tree-shaking) e o Shorebird se recusa a mandar isso num patch OTA.
+    Icons.cloud_outlined,
   ),
   local(
     'local',
     'IA Local',
     'Modelo no proprio robo: responde offline e mais rapido',
-    Icons.memory_rounded,
+    Icons.developer_board,
   );
 
   const IaModo(this.code, this.label, this.descricao, this.icon);

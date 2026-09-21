@@ -238,7 +238,8 @@ class _IaSwitchCard extends StatelessWidget {
         children: [
           const Row(
             children: [
-              Icon(Icons.psychology_rounded,
+              // Icone ja embutido (ver iaModo.dart): manter o patch OTA.
+              Icon(Icons.smart_toy_rounded,
                   color: AppColors.primary, size: 16),
               SizedBox(width: 6),
               Text(
