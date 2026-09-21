@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
+import '../models/iaModo.dart';
 import '../models/robotCommand.dart';
 import '../services/robotConnection.dart';
 import 'rotaSeguraScreen.dart';
@@ -39,6 +40,8 @@ class ControlScreen extends StatelessWidget {
                       _TopBar(robot: robot),
                       const SizedBox(height: 20),
                       _StatusCard(robot: robot),
+                      const SizedBox(height: 14),
+                      _IaSwitchCard(robot: robot),
                       const Spacer(),
                       DirectionPad(
                         enabled: robot.isConnected,
@@ -210,6 +213,73 @@ class _StatusCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Switch entre a IA local (modelo no proprio robo) e a de nuvem (modelo na
+/// rede). A escolha vale mesmo desconectado: fica guardada e vai ao robo na
+/// proxima conexao. Ver [IaModo] e `core/controle.py` no RobotEye.
+class _IaSwitchCard extends StatelessWidget {
+  const _IaSwitchCard({required this.robot});
+
+  final RobotConnection robot;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.psychology_rounded,
+                  color: AppColors.primary, size: 16),
+              SizedBox(width: 6),
+              Text(
+                'INTELIGENCIA',
+                style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 10,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<IaModo>(
+              // Montado a partir do proprio enum: um modo novo aparece aqui
+              // sozinho.
+              segments: IaModo.values
+                  .map(
+                    (modo) => ButtonSegment<IaModo>(
+                      value: modo,
+                      icon: Icon(modo.icon, size: 18),
+                      label: Text(modo.label),
+                    ),
+                  )
+                  .toList(),
+              selected: {robot.iaModo},
+              onSelectionChanged: (selecao) => robot.setIaModo(selecao.first),
+              showSelectedIcon: false,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // A descricao muda com a escolha; o switcher dissolve o texto em vez
+          // de troca-lo seco.
+          AnimatedSwitcher(
+            duration: AppDurations.press,
+            child: Text(
+              robot.iaModo.descricao,
+              key: ValueKey(robot.iaModo),
+              style: const TextStyle(color: Colors.white38, fontSize: 11),
             ),
           ),
         ],

@@ -3,7 +3,9 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/iaModo.dart';
 import '../models/robotCommand.dart';
 import '../models/rotaSegura.dart';
 
@@ -31,10 +33,19 @@ class RobotBleIds {
 /// `notifyListeners()` avisa as telas escutando, que se redesenham mostrando
 /// "Desconectado" sem precisar de nenhum polling.
 class RobotConnection extends ChangeNotifier {
-  RobotConnection._();
+  RobotConnection._() {
+    // A escolha de IA e conveniencia local, como o filtro e o endereco da API:
+    // carrega no arranque e, quando chega, avisa as telas para refletirem o
+    // que a pessoa deixou marcado. Nunca lanca — um valor de versao antiga
+    // vira o padrao.
+    _restaurarIaModo();
+  }
 
   /// So ha um robo e um radio Bluetooth por app.
   static final RobotConnection instance = RobotConnection._();
+
+  /// Onde a preferencia de IA fica guardada entre sessoes.
+  static const _chaveIaModo = 'ia_modo';
 
   BluetoothDevice? _device;
   BluetoothCharacteristic? _rxCharacteristic;
@@ -51,6 +62,12 @@ class RobotConnection extends ChangeNotifier {
 
   RobotCommand _lastCommand = RobotCommand.stop;
   RobotCommand get lastCommand => _lastCommand;
+
+  /// Qual IA o robo deve usar. Nasce em nuvem, mas o valor guardado da ultima
+  /// vez sobrescreve isso assim que carrega. E enviado ao robo ao conectar e a
+  /// cada troca no switch, para os dois lados nunca discordarem.
+  IaModo _iaModo = IaModo.nuvem;
+  IaModo get iaModo => _iaModo;
 
   /// Repete o comando de movimento enquanto o dedo estiver no botao. Ver
   /// [send] para o porque.
@@ -142,6 +159,10 @@ class RobotConnection extends ChangeNotifier {
       _lastCommand = RobotCommand.stop;
       _status = ConnectionStatus.connected;
       notifyListeners();
+      // O robo sobe sempre em nuvem; se a pessoa tinha deixado "local"
+      // marcado, os dois lados discordariam ate o primeiro toque no switch.
+      // Empurrar a escolha atual aqui alinha os dois logo na conexao.
+      await _enviarIaModo();
       return true;
     } catch (e) {
       _lastError = 'Falha ao conectar. Verifique se o robo esta ligado.';
@@ -182,6 +203,41 @@ class RobotConnection extends ChangeNotifier {
 
   Future<bool> _write(RobotCommand command) =>
       _writeRaw('{"cmd":"${command.code}"}');
+
+  /// Troca a IA do robo (switch da tela de controle).
+  ///
+  /// Guarda a escolha e avisa as telas na hora — o switch responde ao toque
+  /// mesmo que o envio demore — e so entao manda ao robo. Desconectado, a
+  /// preferencia fica guardada e vai junto na proxima conexao.
+  Future<void> setIaModo(IaModo modo) async {
+    _iaModo = modo;
+    notifyListeners();
+    await _salvarIaModo(modo);
+    if (isConnected) await _enviarIaModo();
+  }
+
+  Future<bool> _enviarIaModo() =>
+      _writeRaw('{"tipo":"ia","modo":"${_iaModo.code}"}');
+
+  Future<void> _restaurarIaModo() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _iaModo = IaModo.fromCode(prefs.getString(_chaveIaModo));
+      notifyListeners();
+    } catch (_) {
+      // Sem persistencia (primeira execucao, armazenamento indisponivel): fica
+      // o padrao. Preferencia perdida nao pode impedir o app de abrir.
+    }
+  }
+
+  Future<void> _salvarIaModo(IaModo modo) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_chaveIaModo, modo.code);
+    } catch (_) {
+      // Idem: guardar e conveniencia, nao requisito.
+    }
+  }
 
   /// Escreve uma linha JSON crua na caracteristica. Devolve false se nao deu.
   ///
