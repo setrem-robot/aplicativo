@@ -73,7 +73,7 @@ dependencies:
   # A versao REAL do build (name+build), lida da plataforma, para o selo nunca
   # mais depender de uma constante que alguem esqueceu de atualizar. E plugin
   # nativo, entao entra so em release novo — nao viaja por patch.
-  package_info_plus: ^8.0.0
+  package_info_plus: ^10.2.1
 
 dev_dependencies:
   # Ferramenta de teste (`flutter test`). Nao vai dentro do APK.
