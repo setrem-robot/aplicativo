@@ -16,7 +16,8 @@ import 'ajustesApiScreen.dart';
 /// O que o robô fez, lido do banco na nuvem.
 ///
 /// Esta tela **não depende do Bluetooth**: funciona longe do robô e com ele
-/// desligado, porque o que ela mostra é histórico, e não o robô ao vivo. É por
+/// desligado, porque lê do banco, e não do robô. Ao vivo mesmo assim: cada aba
+/// busca de novo sozinha enquanto está à vista (ver `Carregando`). É por
 /// isso que ela é alcançada da tela de conexão, e não da de controle — quem
 /// abre o app para ver onde o robô andou ontem não deveria precisar parear
 /// nada antes.
@@ -225,6 +226,18 @@ class _PrimeiroUso extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // As quatro abas
 // ---------------------------------------------------------------------------
+
+/// De quanto em quanto tempo cada aba busca de novo, sozinha.
+///
+/// O robô publica a saúde a cada ~30 s; "Agora" a cada 5 s deixa o que chega
+/// na tela em segundos, e a consulta é a mais leve da API. As outras abas
+/// mostram períodos longos, em que uma leitura a mais quase não mexe no
+/// desenho — vão mais devagar para não refazer gráficos e mapas à toa.
+const _aoVivoAgora = Duration(seconds: 5);
+const _aoVivoEventos = Duration(seconds: 10);
+const _aoVivoTrajeto = Duration(seconds: 15);
+const _aoVivoHistorico = Duration(seconds: 30);
+
 class _AbaAgora extends StatelessWidget {
   const _AbaAgora();
 
@@ -237,6 +250,7 @@ class _AbaAgora extends StatelessWidget {
         Expanded(
           child: Carregando<EstadoRobo>(
             buscar: TelemetryApi.instance.estado,
+            atualizarACada: _aoVivoAgora,
             vazio: (_) => const SemDados(
               mensagem: 'Nenhuma telemetria ainda',
               detalhe: 'O robô grava aqui quando estiver ligado e com rede. '
@@ -267,6 +281,7 @@ class _AbaTrajeto extends StatelessWidget {
       buscar: () => TelemetryApi.instance.trajeto(
         desde: DateTime.now().subtract(const Duration(days: 1)),
       ),
+      atualizarACada: _aoVivoTrajeto,
       vazio: (_) => const SemDados(
         mensagem: 'Sem posições nas últimas 24 h',
         detalhe: 'O GPS ainda não está instalado no robô. Quando estiver, o '
@@ -422,6 +437,7 @@ class _CartaoGrafico extends StatelessWidget {
                 intervalo: intervalo,
                 desde: DateTime.now().subtract(duracao),
               ),
+              atualizarACada: _aoVivoHistorico,
               vazio: (_) => SemDados(
                 mensagem: 'Sem ${grandeza.rotulo.toLowerCase()} nesse período',
                 detalhe: 'Tente uma janela maior, ou confira se o robô estava '
@@ -462,6 +478,7 @@ class _AbaEventos extends StatelessWidget {
                 // A chave é o conjunto de fontes: mudou o filtro, nova consulta.
                 key: ValueKey(tipos.join(',')),
                 buscar: () => TelemetryApi.instance.eventosDasFontes(tipos: tipos),
+                atualizarACada: _aoVivoEventos,
                 vazio: (_) => SemDados(
                   mensagem: 'Nenhum evento registrado',
                   detalhe: tipos.isEmpty

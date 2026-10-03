@@ -100,7 +100,7 @@ mais lento; o APK gerado é o mesmo.
 
 ```bash
 flutter analyze   # deve estar sempre limpo
-flutter test      # directionPad, robotCommand, telemetria, rotaSegura, filtro, visorJson
+flutter test      # directionPad, robotCommand, telemetria, rotaSegura, filtro, visorJson, carregando
 flutter run -d linux   # roda aqui mesmo, com Bluetooth real
 flutter build apk --debug   # gera APK pra testar em Android físico
 

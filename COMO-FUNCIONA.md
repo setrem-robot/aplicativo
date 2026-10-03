@@ -132,10 +132,13 @@ a conexão pode cair sozinha (robô desligou, saiu do alcance); quando isso
 acontece, `notifyListeners()` avisa as telas, que se redesenham sem nenhum
 polling.
 
-**`TelemetryApi`** — deliberadamente **não** é um `ChangeNotifier`. A telemetria
-não chega sozinha: as telas pedem quando abrem e quando a pessoa puxa para
-atualizar. Um `ChangeNotifier` aqui daria a impressão de que os dados se
-atualizam sozinhos, o que não é verdade.
+**`TelemetryApi`** — deliberadamente **não** é um `ChangeNotifier`. A API não
+empurra nada: quem pede é a tela. O "ao vivo" mora no widget `Carregando`, que
+repete a busca sozinho enquanto a aba está à vista (Agora a cada 5 s, Eventos
+10 s, Trajeto 15 s, Histórico 30 s), sem giro nem pisca — a leitura antiga fica
+até a nova chegar, e uma falha passageira não a apaga. Pausa com o app em
+segundo plano ou com outra tela por cima, e busca na hora ao voltar. Puxar para
+atualizar continua valendo.
 
 ### Os modelos
 
