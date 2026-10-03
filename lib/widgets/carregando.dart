@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
 import '../services/telemetryApi.dart';
 
-/// O ciclo "carregando → deu certo → deu errado", uma vez só.
+/// O ciclo "carregando → deu certo → deu errado", e depois **ao vivo**.
 ///
 /// As quatro abas da telemetria fazem a mesma coisa: pedem algo à API, mostram
 /// um giro enquanto esperam, o conteúdo quando chega e um erro legível quando
@@ -11,14 +13,21 @@ import '../services/telemetryApi.dart';
 /// "tentar de novo" — e a que esquecesse seria descoberta com o robô ligado,
 /// numa apresentação.
 ///
-/// O `puxar para atualizar` vem junto: a telemetria não chega sozinha ao app,
-/// então a pessoa precisa de um jeito óbvio de pedir de novo.
+/// Com [atualizarACada], a busca se repete sozinha enquanto a tela está à
+/// vista: o que o robô publica aparece sem fechar e abrir o app. A repetição é
+/// **silenciosa** — o conteúdo fica na tela enquanto a próxima leitura vem, e
+/// troca quando ela chega. Um giro a cada cinco segundos faria o painel piscar,
+/// e uma falha momentânea de rede apagaria dados bons para mostrar um erro que
+/// some sozinho na rodada seguinte.
+///
+/// O `puxar para atualizar` continua, para quem não quer esperar a rodada.
 class Carregando<T> extends StatefulWidget {
   const Carregando({
     super.key,
     required this.buscar,
     required this.construir,
     this.vazio,
+    this.atualizarACada,
   });
 
   /// O que pedir à API. Chamado no primeiro build e a cada atualização.
@@ -31,22 +40,113 @@ class Carregando<T> extends StatefulWidget {
   /// problemas com soluções opostas.
   final Widget Function(BuildContext context)? vazio;
 
+  /// De quanto em quanto tempo buscar de novo, sozinho. Nulo = só uma vez.
+  ///
+  /// Pausa com o app em segundo plano ou com outra tela por cima: ninguém está
+  /// olhando, e cada busca é tráfego de celular e uma consulta no banco.
+  final Duration? atualizarACada;
+
   @override
   State<Carregando<T>> createState() => CarregandoState<T>();
 }
 
-class CarregandoState<T> extends State<Carregando<T>> {
-  late Future<T> _futuro;
+class CarregandoState<T> extends State<Carregando<T>> with WidgetsBindingObserver {
+  /// A última leitura boa. Fica na tela até chegar outra.
+  T? _dados;
+  bool _temDados = false;
+
+  /// A falha da última busca, se a última falhou.
+  Object? _erro;
+
+  /// A busca em andamento. Uma rodada do relógio que cai enquanto a anterior
+  /// ainda espera a API reaproveita a mesma, em vez de empilhar pedidos numa
+  /// rede lenta.
+  Future<void>? _emCurso;
+
+  Timer? _relogio;
+  bool _emPrimeiroPlano = true;
 
   @override
   void initState() {
     super.initState();
-    _futuro = widget.buscar();
+    WidgetsBinding.instance.addObserver(this);
+    _buscar();
+    _agendar();
+  }
+
+  @override
+  void didUpdateWidget(Carregando<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.atualizarACada != widget.atualizarACada) _agendar();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final ativo = state == AppLifecycleState.resumed;
+    if (ativo == _emPrimeiroPlano) return;
+    _emPrimeiroPlano = ativo;
+    if (ativo) {
+      // Voltou ao app: o que está na tela pode ter minutos. Busca já, sem
+      // esperar a próxima rodada.
+      if (widget.atualizarACada != null) _buscar();
+      _agendar();
+    } else {
+      _relogio?.cancel();
+    }
+  }
+
+  @override
+  void dispose() {
+    _relogio?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   /// Refaz a busca. Chamado pelo "puxar para atualizar" e pelo botão de erro.
   void recarregar() {
-    setState(() => _futuro = widget.buscar());
+    // Do erro sem dados, "tentar de novo" volta ao giro; com dados na tela,
+    // eles ficam até a resposta chegar.
+    if (!_temDados) setState(() => _erro = null);
+    _buscar();
+  }
+
+  void _agendar() {
+    _relogio?.cancel();
+    final periodo = widget.atualizarACada;
+    if (periodo == null || !_emPrimeiroPlano) return;
+    _relogio = Timer.periodic(periodo, (_) {
+      // Outra tela por cima (ajustes, por exemplo): espera voltar.
+      if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? true)) return;
+      _buscar();
+    });
+  }
+
+  Future<void> _buscar() {
+    return _emCurso ??= _executar().whenComplete(() => _emCurso = null);
+  }
+
+  Future<void> _executar() async {
+    try {
+      final dados = await widget.buscar();
+      if (!mounted) return;
+      setState(() {
+        _dados = dados;
+        _temDados = true;
+        _erro = null;
+      });
+    } catch (erro) {
+      if (!mounted) return;
+      setState(() => _erro = erro);
+    }
+  }
+
+  /// Uma falha que não passa sozinha (token errado, por exemplo) precisa
+  /// aparecer mesmo com dados antigos na tela; as outras, só sem eles.
+  bool get _erroBloqueia {
+    final erro = _erro;
+    if (erro == null) return false;
+    if (!_temDados) return true;
+    return erro is ErroApi && !erro.podeTentarDeNovo;
   }
 
   @override
@@ -54,40 +154,32 @@ class CarregandoState<T> extends State<Carregando<T>> {
     return RefreshIndicator(
       color: AppColors.primary,
       backgroundColor: AppColors.surface,
-      onRefresh: () async {
-        recarregar();
-        // O indicador some quando este Future termina; sem esperar o mesmo
-        // Future da tela, ele sumiria antes de os dados chegarem.
-        await _futuro.catchError((_) => throw _SilenciarNoIndicador());
-      },
-      child: FutureBuilder<T>(
-        future: _futuro,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const _Centralizado(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            );
-          }
-          if (snapshot.hasError) {
-            return _Erro(erro: snapshot.error!, aoTentarDeNovo: recarregar);
-          }
-          final dados = snapshot.data as T;
-          if (widget.vazio != null && _pareceVazio(dados)) {
-            return _Centralizado(child: widget.vazio!(context));
-          }
-          return widget.construir(context, dados);
-        },
-      ),
+      // O indicador some quando este Future termina; é a mesma busca da tela,
+      // então ele some quando os dados chegam. `_executar` não lança: quem
+      // mostra o problema é o próprio build, logo abaixo.
+      onRefresh: _buscar,
+      child: _corpo(context),
     );
+  }
+
+  Widget _corpo(BuildContext context) {
+    if (_erroBloqueia) {
+      return _Erro(erro: _erro!, aoTentarDeNovo: recarregar);
+    }
+    if (!_temDados) {
+      return const _Centralizado(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+    final dados = _dados as T;
+    if (widget.vazio != null && _pareceVazio(dados)) {
+      return _Centralizado(child: widget.vazio!(context));
+    }
+    return widget.construir(context, dados);
   }
 
   bool _pareceVazio(T dados) => dados is Iterable && dados.isEmpty;
 }
-
-/// O `RefreshIndicator` some quando o Future dele termina — inclusive com erro.
-/// Este erro existe só para ele terminar sem o Flutter reclamar de exceção não
-/// tratada; quem mostra o problema é o `FutureBuilder`, logo abaixo.
-class _SilenciarNoIndicador implements Exception {}
 
 class _Centralizado extends StatelessWidget {
   const _Centralizado({required this.child});
