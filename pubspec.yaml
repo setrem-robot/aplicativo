@@ -26,7 +26,7 @@ dependencies:
   # Bluetooth Classic (SPP) que o projeto usava antes. O ESP32 expõe um
   # servico no padrao Nordic UART Service (NUS), que este pacote fala nos
   # dois sistemas operacionais com a mesma API.
-  flutter_blue_plus: ^2.3.12
+  flutter_blue_plus: ^2.3.14
 
   # Pede as permissoes de Bluetooth e Localizacao ao Android.
   # Fixado em ^11: a 13.x exige compileSdk 37 (Android canario) para compilar o
