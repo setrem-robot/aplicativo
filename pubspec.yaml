@@ -54,7 +54,7 @@ dependencies:
   # Graficos. `fl_chart` desenha em Canvas puro, sem plugin nativo, entao
   # funciona igual em Android, iOS e no `flutter run -d linux` usado para testar
   # aqui sem celular.
-  fl_chart: ^1.0.0
+  fl_chart: ^1.3.0
 
   # Guarda o endereco e o token da API entre aberturas do app.
   shared_preferences: ^2.3.0
