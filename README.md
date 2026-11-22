@@ -176,7 +176,8 @@ existe porque ler a versão em tempo de execução exigiria um plugin nativo, qu
 ### O ícone do app
 
 São **os olhos da Atlas** — a mesma caixa arredondada que o rosto desenha no
-robô (`corner_radius = 0.30`, no RobotEye), no degradê menta-verde da marca.
+robô (`corner_radius = 0.30`, no RobotEye), no mesmo ciano dos olhos dele
+(`#04C9FD`, o `EYE_COLOR` do RobotEye) — não na cor da marca do app.
 
 Os dois olhos são iguais. O rosto no robô baixa o olho direito ~7%, e o ícone
 copiou isso a princípio; mas lá a face pisca e se mexe, e a assimetria some no
