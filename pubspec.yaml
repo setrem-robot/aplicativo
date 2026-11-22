@@ -34,7 +34,7 @@ dependencies:
   # e a mesma. Voltar a subir so quando o compileSdk 37 for estavel.
   permission_handler: ^11.0.1
 
-  cupertino_icons: ^1.0.6
+  cupertino_icons: ^2.0.0
 
   # --- Telemetria: ler do banco o que o robo gravou ---------------------------
   # O app deixou de so mandar comandos: ele tambem mostra o historico que a VM
