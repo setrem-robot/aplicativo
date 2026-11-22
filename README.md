@@ -197,7 +197,9 @@ copiar** — é ele que pega o ícone que some no tamanho de 48 px, que é onde 
 mais aparece.
 
 Depois, copie para `android/app/src/main/res/mipmap-*/` e para
-`ios/Runner/Assets.xcassets/AppIcon.appiconset/`.
+`ios/Runner/Assets.xcassets/AppIcon.appiconset/`. Os ícones de web, macOS e
+Windows saem direto no lugar, rodando de dentro de `app/`:
+`python tool/gerar_icones_outros.py`.
 
 Saem junto dois PNGs de 1024 px que o app não usa — `atlas-icone-1024.png`, com
 o quadro escuro, e `atlas-olhos-1024.png`, só os olhos em fundo transparente.
