@@ -175,11 +175,11 @@ existe porque ler a versão em tempo de execução exigiria um plugin nativo, qu
 
 ### O ícone do app
 
-São **os olhos da Atlas** em repouso, como aparecem na tela do robô: dois
-olhos quadrados de canto arredondado (`EYE_CORNER_RADIUS = 0.30`), em ciano
-chapado `#04C9FD` (o `EYE_COLOR` do RobotEye) sobre preto, sem a boca. O
-tamanho dos olhos e a distância entre eles são os do `face/layout.py` do
-RobotEye, só reescalados. O cabeçalho de `tool/gerar_icones.py` diz de onde
+São **os olhos da Atlas**: duas caixas arredondadas, mais altas que largas,
+num degradê diagonal de ciano (`#46EBFF` → `#00AAEB`, com o meio no
+`#04C9FD`, o `EYE_COLOR` do RobotEye), sobre o fundo escuro do app
+(`#0A0E1A`). O ícone é quadrado, sem canto arredondado — quem arredonda é o
+lançador. O cabeçalho de `tool/gerar_icones.py` diz de onde
 sai cada número.
 
 Os arquivos não são editados à mão: saem de um gerador, para que mudar a cor ou
@@ -200,7 +200,7 @@ Depois, copie para `android/app/src/main/res/mipmap-*/` e para
 `ios/Runner/Assets.xcassets/AppIcon.appiconset/`.
 
 Saem junto dois PNGs de 1024 px que o app não usa — `atlas-icone-1024.png`, com
-o quadro preto, e `atlas-olhos-1024.png`, só os olhos em fundo transparente.
+o quadro escuro, e `atlas-olhos-1024.png`, só os olhos em fundo transparente.
 São para slide, capa e impressão, e existem para que ninguém precise ampliar um
 mipmap de 192 px quando o ícone for parar num cartaz.
 
