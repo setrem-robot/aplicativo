@@ -20,24 +20,28 @@ Duas decisões que vieram de olhar o resultado, e não da teoria:
 from PIL import Image, ImageDraw
 
 FUNDO = (10, 14, 26, 255)      # AppColors.background #0A0E1A
-MENTA = (36, 255, 194)         # AppColors.secondary  #24FFC2
-VERDE = (9, 208, 133)          # AppColors.primary    #09D085
+# A cor do olho no robô (EYE_COLOR, `config.py` no RobotEye), e não a cor da
+# marca do app: o ícone é o rosto da Atlas, e quem a vê ligada vê ciano.
+OLHO = (4, 201, 253)           # #04C9FD
+DEGRADE = 0.16                 # GRADIENT_DEPTH em `face/renderer.py` no RobotEye
 SS = 4                          # supersampling: a borda em 48 px serrilharia
 
 
-def _degrade(T, x0, y0, x1, y1):
-    """Menta -> verde na diagonal, como o AppColors.brandGradient.
+def _degrade(T, y0, y1):
+    """Topo um pouco mais claro, base um pouco mais escura, como no rosto.
 
-    Pintado só sobre a área dos olhos: um degradê espalhado pelo quadro inteiro
-    ficaria quase de uma cor só na parte que aparece.
+    A rampa é a mesma de `paint` no renderer do RobotEye: centrada em 1, para o
+    meio do olho sair exatamente em #04C9FD.
     """
-    grad = Image.new("RGB", (T, T), VERDE)
+    grad = Image.new("RGB", (T, T), OLHO)
     px = grad.load()
-    span = max((x1 - x0) + (y1 - y0), 1)
+    alt = max(y1 - y0, 1)
     for y in range(T):
+        t = min(max((y - y0) / alt, 0.0), 1.0)
+        k = 1 + DEGRADE / 2 - DEGRADE * t
+        cor = tuple(min(int(c * k), 255) for c in OLHO)
         for x in range(T):
-            t = min(max(((x - x0) + (y - y0)) / span, 0.0), 1.0)
-            px[x, y] = tuple(int(MENTA[c] + (VERDE[c] - MENTA[c]) * t) for c in range(3))
+            px[x, y] = cor
     return grad
 
 
@@ -63,7 +67,7 @@ def olhos(tam, escala=1.0):
         )
 
     quadro = Image.new("RGBA", (T, T), (0, 0, 0, 0))
-    quadro.paste(_degrade(T, x0, topo, x0 + total, topo + alt), (0, 0), mascara)
+    quadro.paste(_degrade(T, topo, topo + alt), (0, 0), mascara)
     return quadro.resize((tam, tam), Image.LANCZOS)
 
 
