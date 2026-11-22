@@ -1,69 +1,68 @@
-"""Gera o ícone do Atlas Controller: os olhos da Atlas.
+"""Gera o ícone do Atlas Controller: o rosto da Atlas, como ele aparece no robô.
 
-A forma não é inventada — é a do rosto que roda no robô: uma caixa arredondada
-(ver `corner_radius = 0.30` em `config.py` no RobotEye). Quem já viu a Atlas
-ligada reconhece o ícone sem ler o nome.
+Nada aqui é inventado. Cada medida sai do rosto que roda no Pi (RobotEye):
 
-Os dois olhos são idênticos. O rosto que roda no robô baixa o olho direito ~7%,
-e o ícone imitava isso — mas num ícone de 48 px a diferença não lê como a
-assimetria viva do rosto, lê como desalinhamento. Lá o robô pisca e se mexe, e a
-assimetria some no movimento; aqui a forma fica parada.
+- **Olhos quadrados**, 640 x 640 no referencial 2560 x 1440 (`face/layout.py`),
+  com canto de raio 0,30 do lado (`EYE_CORNER_RADIUS` em `config.py`).
+- **Centros em 1/3 e 2/3 da largura da tela** (`leftEyeX`/`rightEyeX`), ou
+  seja, 853 unidades entre um e outro.
+- **A boca neutra**: um traço de 0,52 x 820 de comprimento, meia-espessura
+  0,11 x 120, centrado 470 unidades abaixo dos olhos, a 50% de opacidade
+  (`MOUTH_NEUTRAL` em `face/shapes.py`, `MOUTH_*` em `face/layout.py`).
+- **Cor chapada `#04C9FD` sobre preto**, sem degradê nem halo: no Pi
+  (aarch64) a qualidade `auto` cai para `LOW`, que desenha assim
+  (`qualityFor` em `face/renderer.py`). É o rosto que quem vê o robô conhece.
 
-Duas decisões que vieram de olhar o resultado, e não da teoria:
-
-- **Os olhos ocupam ~70% da largura.** A primeira versão usava 60% e, no
-  tamanho mdpi (48 px) — que é justamente onde o ícone mais é visto —, viravam
-  dois pontinhos num quadrado escuro.
-- **O raio é 1/3 da largura do olho, não metade.** Com metade, a forma vira
-  cápsula e perde a cara de caixa arredondada que a Atlas tem.
+O ícone mostra o rosto inteiro enquadrado, só reescalado. Se o rosto mudar no
+RobotEye, é aqui que as constantes abaixo precisam acompanhar.
 """
 from PIL import Image, ImageDraw
 
-FUNDO = (10, 14, 26, 255)      # AppColors.background #0A0E1A
-MENTA = (36, 255, 194)         # AppColors.secondary  #24FFC2
-VERDE = (9, 208, 133)          # AppColors.primary    #09D085
+FUNDO = (0, 0, 0, 255)          # BACKGROUND_COLOR padrão do rosto, #000000
+OLHO = (4, 201, 253)            # EYE_COLOR, #04C9FD
 SS = 4                          # supersampling: a borda em 48 px serrilharia
 
+# Rosto em unidades do referencial do RobotEye, origem no meio dos dois olhos.
+LADO = 640                      # EYE_WIDTH = EYE_HEIGHT
+RAIO = 0.30 * LADO              # EYE_CORNER_RADIUS
+CENTRO_X = 2560 / 6             # olhos em W/3 e 2W/3: ±W/6 do meio
+BOCA_Y = 320 + 150              # MOUTH_Y_OFFSET - EYE_Y_OFFSET
+BOCA_MEIO = 0.52 * 820 / 2      # MOUTH_NEUTRAL.width x MOUTH_WIDTH, metade
+BOCA_ESP = 0.11 * 240 / 2       # MOUTH_NEUTRAL.thickness x meia MOUTH_HEIGHT
+BOCA_ALFA = 0.5                 # MOUTH_NEUTRAL.alpha
 
-def _degrade(T, x0, y0, x1, y1):
-    """Menta -> verde na diagonal, como o AppColors.brandGradient.
-
-    Pintado só sobre a área dos olhos: um degradê espalhado pelo quadro inteiro
-    ficaria quase de uma cor só na parte que aparece.
-    """
-    grad = Image.new("RGB", (T, T), VERDE)
-    px = grad.load()
-    span = max((x1 - x0) + (y1 - y0), 1)
-    for y in range(T):
-        for x in range(T):
-            t = min(max(((x - x0) + (y - y0)) / span, 0.0), 1.0)
-            px[x, y] = tuple(int(MENTA[c] + (VERDE[c] - MENTA[c]) * t) for c in range(3))
-    return grad
+# Caixa do rosto inteiro (dos cantos dos olhos ao pé da boca).
+_ESQ, _DIR = -CENTRO_X - LADO / 2, CENTRO_X + LADO / 2
+_TOPO, _BASE = -LADO / 2, BOCA_Y + BOCA_ESP
+LARGURA_ROSTO = _DIR - _ESQ
+OCUPA = 0.72                    # fração da largura do ícone que o rosto ocupa
 
 
 def olhos(tam, escala=1.0):
-    """Os dois olhos num quadro transparente. `escala` encolhe o par."""
+    """O rosto (olhos e boca) num quadro transparente. `escala` encolhe tudo."""
     T = tam * SS
-    larg = 0.305 * T * escala
-    alt = 0.450 * T * escala
-    vao = 0.080 * T * escala
-    raio = larg * 0.34             # caixa arredondada, não cápsula
-
-    total = larg * 2 + vao
-    x0 = (T - total) / 2
-    cy = T / 2
-    topo = cy - alt / 2
-
-    mascara = Image.new("L", (T, T), 0)
-    md = ImageDraw.Draw(mascara)
-    for i in range(2):
-        ex = x0 + i * (larg + vao)
-        md.rounded_rectangle(
-            [ex, topo, ex + larg, topo + alt], radius=raio, fill=255
-        )
+    k = OCUPA * escala * T / LARGURA_ROSTO       # unidades do robô -> pixels
+    ox = T / 2 - (_ESQ + _DIR) / 2 * k           # centraliza a caixa do rosto
+    oy = T / 2 - (_TOPO + _BASE) / 2 * k
 
     quadro = Image.new("RGBA", (T, T), (0, 0, 0, 0))
-    quadro.paste(_degrade(T, x0, topo, x0 + total, topo + alt), (0, 0), mascara)
+    d = ImageDraw.Draw(quadro)
+    for cx in (-CENTRO_X, CENTRO_X):
+        d.rounded_rectangle(
+            [ox + (cx - LADO / 2) * k, oy - LADO / 2 * k,
+             ox + (cx + LADO / 2) * k, oy + LADO / 2 * k],
+            radius=RAIO * k, fill=OLHO + (255,),
+        )
+
+    # A boca é uma cápsula: retângulo com as pontas redondas.
+    boca = Image.new("RGBA", (T, T), (0, 0, 0, 0))
+    e = BOCA_ESP * k
+    ImageDraw.Draw(boca).rounded_rectangle(
+        [ox - (BOCA_MEIO + BOCA_ESP) * k, oy + BOCA_Y * k - e,
+         ox + (BOCA_MEIO + BOCA_ESP) * k, oy + BOCA_Y * k + e],
+        radius=e, fill=OLHO + (int(255 * BOCA_ALFA),),
+    )
+    quadro.alpha_composite(boca)
     return quadro.resize((tam, tam), Image.LANCZOS)
 
 
