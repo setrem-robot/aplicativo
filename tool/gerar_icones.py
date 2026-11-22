@@ -1,4 +1,4 @@
-"""Gera o ícone do Atlas Controller: o rosto da Atlas, como ele aparece no robô.
+"""Gera o ícone do Atlas Controller: os olhos da Atlas, como aparecem no robô.
 
 Nada aqui é inventado. Cada medida sai do rosto que roda no Pi (RobotEye):
 
@@ -6,15 +6,12 @@ Nada aqui é inventado. Cada medida sai do rosto que roda no Pi (RobotEye):
   com canto de raio 0,30 do lado (`EYE_CORNER_RADIUS` em `config.py`).
 - **Centros em 1/3 e 2/3 da largura da tela** (`leftEyeX`/`rightEyeX`), ou
   seja, 853 unidades entre um e outro.
-- **A boca neutra**: um traço de 0,52 x 820 de comprimento, meia-espessura
-  0,11 x 120, centrado 470 unidades abaixo dos olhos, a 50% de opacidade
-  (`MOUTH_NEUTRAL` em `face/shapes.py`, `MOUTH_*` em `face/layout.py`).
 - **Cor chapada `#04C9FD` sobre preto**, sem degradê nem halo: no Pi
   (aarch64) a qualidade `auto` cai para `LOW`, que desenha assim
   (`qualityFor` em `face/renderer.py`). É o rosto que quem vê o robô conhece.
 
-O ícone mostra o rosto inteiro enquadrado, só reescalado. Se o rosto mudar no
-RobotEye, é aqui que as constantes abaixo precisam acompanhar.
+O ícone é só o par de olhos, sem a boca, enquadrado e reescalado. Se os olhos
+mudarem no RobotEye, é aqui que as constantes abaixo precisam acompanhar.
 """
 from PIL import Image, ImageDraw
 
@@ -22,28 +19,19 @@ FUNDO = (0, 0, 0, 255)          # BACKGROUND_COLOR padrão do rosto, #000000
 OLHO = (4, 201, 253)            # EYE_COLOR, #04C9FD
 SS = 4                          # supersampling: a borda em 48 px serrilharia
 
-# Rosto em unidades do referencial do RobotEye, origem no meio dos dois olhos.
+# Olhos em unidades do referencial do RobotEye, origem no meio dos dois.
 LADO = 640                      # EYE_WIDTH = EYE_HEIGHT
 RAIO = 0.30 * LADO              # EYE_CORNER_RADIUS
 CENTRO_X = 2560 / 6             # olhos em W/3 e 2W/3: ±W/6 do meio
-BOCA_Y = 320 + 150              # MOUTH_Y_OFFSET - EYE_Y_OFFSET
-BOCA_MEIO = 0.52 * 820 / 2      # MOUTH_NEUTRAL.width x MOUTH_WIDTH, metade
-BOCA_ESP = 0.11 * 240 / 2       # MOUTH_NEUTRAL.thickness x meia MOUTH_HEIGHT
-BOCA_ALFA = 0.5                 # MOUTH_NEUTRAL.alpha
-
-# Caixa do rosto inteiro (dos cantos dos olhos ao pé da boca).
-_ESQ, _DIR = -CENTRO_X - LADO / 2, CENTRO_X + LADO / 2
-_TOPO, _BASE = -LADO / 2, BOCA_Y + BOCA_ESP
-LARGURA_ROSTO = _DIR - _ESQ
-OCUPA = 0.72                    # fração da largura do ícone que o rosto ocupa
+LARGURA_PAR = 2 * CENTRO_X + LADO
+OCUPA = 0.72                    # fração da largura do ícone que o par ocupa
 
 
 def olhos(tam, escala=1.0):
-    """O rosto (olhos e boca) num quadro transparente. `escala` encolhe tudo."""
+    """Os dois olhos num quadro transparente. `escala` encolhe o par."""
     T = tam * SS
-    k = OCUPA * escala * T / LARGURA_ROSTO       # unidades do robô -> pixels
-    ox = T / 2 - (_ESQ + _DIR) / 2 * k           # centraliza a caixa do rosto
-    oy = T / 2 - (_TOPO + _BASE) / 2 * k
+    k = OCUPA * escala * T / LARGURA_PAR         # unidades do robô -> pixels
+    ox = oy = T / 2
 
     quadro = Image.new("RGBA", (T, T), (0, 0, 0, 0))
     d = ImageDraw.Draw(quadro)
@@ -53,16 +41,6 @@ def olhos(tam, escala=1.0):
              ox + (cx + LADO / 2) * k, oy + LADO / 2 * k],
             radius=RAIO * k, fill=OLHO + (255,),
         )
-
-    # A boca é uma cápsula: retângulo com as pontas redondas.
-    boca = Image.new("RGBA", (T, T), (0, 0, 0, 0))
-    e = BOCA_ESP * k
-    ImageDraw.Draw(boca).rounded_rectangle(
-        [ox - (BOCA_MEIO + BOCA_ESP) * k, oy + BOCA_Y * k - e,
-         ox + (BOCA_MEIO + BOCA_ESP) * k, oy + BOCA_Y * k + e],
-        radius=e, fill=OLHO + (int(255 * BOCA_ALFA),),
-    )
-    quadro.alpha_composite(boca)
     return quadro.resize((tam, tam), Image.LANCZOS)
 
 
