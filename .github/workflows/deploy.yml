@@ -137,9 +137,13 @@ jobs:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
         run: |
           set -euo pipefail
+          # Flutter fixo: sem isto o Shorebird usa o estável mais novo, e o 3.50
+          # exige Gradle 9.3.1 (o projeto está em 9.1.0) e quebrou o 1.2.5+12.
+          # Os patches herdam a versão do release, então só aqui precisa.
           shorebird release \
             --platforms=android \
-            --artifact=apk
+            --artifact=apk \
+            --flutter-version=3.47.7
 
       - name: Publicar o APK na GitHub Release
         if: steps.decide.outputs.mode == 'release'
